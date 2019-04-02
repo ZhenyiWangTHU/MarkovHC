@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1554208446350.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2771841183",
+    "id" : "95C472D2",
+    "lastKnownWriteTime" : 1554212451,
+    "last_content_update" : 1554212451827,
+    "path" : "F:/Github/MarkovHC/MarkovHC/R/MarkovHC.R",
+    "project_path" : "R/MarkovHC.R",
+    "properties" : {
+        "cursorPosition" : "98,30",
+        "scrollLine" : "66",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

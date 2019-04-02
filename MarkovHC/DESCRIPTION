@@ -1,0 +1,15 @@
+Package: MarkovHC
+Type: Package
+Title: Markov Hierarchical Clustering
+Version: 1.0.0
+Authors@R: person(given = 'Zhenyi', family = 'Wang', 
+email = 'wangzy17@mails.tsinghua.edu.cn', role = c('aut','cre'))
+Maintainer: Zhenyi Wang<wangzy17@mails.tsinghua.edu.cn>
+Description: A package for exploring the hierarchical structure in
+high-dimensional data. We implement Markov hierarchical algorithm
+based on the metastability of exponentially perturbed Markov chain.
+Depends:R(>=3.5.1)
+Imports:
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
