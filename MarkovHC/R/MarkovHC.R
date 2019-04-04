@@ -2,8 +2,8 @@
 #'
 #' Function \code{MarkovHC} The main function of MarkovHC, which applies Markov
 #' Hierarchical Clustering Algorithm to the given data (a dataframe or a matrix).
-#' @param origin_matrix A matrix or a dataframe. Each row should be a feature
-#' and each column should be a sample.
+#' @param origin_matrix A matrix or a dataframe with row names and column names.
+#' Each row should be a feature and each column should be a sample.
 #' @param minrt A parameter helping to judge whether a group of samples is a
 #' qualified cluster. If we assume that we have \code{tol_num} samples in
 #' total, then a qualified cluster should be of size larger than
@@ -15,7 +15,12 @@
 #' clustering methods would be used as a preliminary processinng method.
 #' Available choices include \code{single}, \code{complete}, \code{average}
 #' and \code{kmeans}. Default is 'average'.
-#' @param emphasizedistance A interger indicates the power of element in
+#' @param dobasecluster A Bloolean parameter indicates wether to do clustering
+#' on the first level. Default is FALSE.
+#' @param baseclusternum A integer indicates the number of clusters on the
+#' first level. This parameter is useful only when the parameter
+#''dobasecluster' is TRUE. Default is a tenth of the number of samples.
+#' @param emphasizedistance A integer indicates the power of element in
 #' the C matrix, bigger the emphasizdistance, more likely to detect
 #' elongated clusters. Default is 1. More details please refer to the article.
 #' @param weightDist A numeric parameter indicates the power of distance.
@@ -23,13 +28,13 @@
 #' @param weightDens A numeric parameter indicates the power of density.
 #' Default is 0.5.
 #' @param showprocess A Boolean parameter indicating whether to print
-#' intermediate information.
+#' intermediate information.Default is FALSE.
 #' @param bn A numeric parameter indicates the power of the Minkowski distance.
 #' Default is 2.
 #' @param stop_rate A numeric parameter indicating a stopping criterion that
 #' if the number of samples belonging to qualified clusters exceeds
 #' \code{stop_rate*num_data}on this level, then the algorithm will stop and
-#' not bulid the higher hierachical structure.
+#' not bulid the higher hierachical structure. Default is 1.
 #' @details The data given by \code{origin_matrix} will be clustered by using
 #' the Markov Hierarchical Clustering Algorithm, which generates a hierarchical
 #' structure based on the metastability of exponentially perturbed Markov chain.
@@ -44,13 +49,21 @@ MarkovHC<-function(origin_matrix,
               minrt=50,
               transformtype="none",
               basecluster="average",
+              dobasecluster=FALSE,
+              baseclusternum=NULL,
               emphasizedistance=1,
               weightDist=2,
               weightDens=0.5,
               showprocess=FALSE,
               bn=2,
-              stop_rate=0.9){
-  #check the input parameters--------------------------------------------------
+              stop_rate=1){
+  ##step01.check the input parameters------------------------------------------
+  #origin_matrix
+  if((!is.matrix(origin_matrix))&(!is.data.frame(origin_matrix))){
+    print("The type of 'origin_matrix' should be matirx or dataframe!")
+    return(NULL)
+  }
+  origin_matrix <- t(origin_matrix)
   #minrt
   if(!is.numeric(minrt)){
     print("The type of 'minrt' should be numeric!")
@@ -66,6 +79,14 @@ MarkovHC<-function(origin_matrix,
     print("The type of 'transformtype' should be character!")
     return(NULL)
   }
+  if(transformtype=="arsinh"){
+    transformed_matrix<-arsinh(origin_matrix)
+  }else if(transformtype=="none"){
+    transformed_matrix<-origin_matrix
+  }else{
+    print("This kind of 'transformtype' is unavailable right now!")
+    return(NULL)
+  }
 
   #basecluster
   if(!is.character(basecluster)){
@@ -76,7 +97,7 @@ MarkovHC<-function(origin_matrix,
      (basecluster=="average")|(basecluster=="kmeans")){
     basecluster<-basecluster
   }else{
-    print("This kind of 'basecluster' is unavaliable right now!")
+    print("This kind of 'basecluster' is unavailable right now!")
     return(NULL)
   }
 
@@ -89,56 +110,63 @@ MarkovHC<-function(origin_matrix,
     print("The parameter 'emphasizedistance' should be a positive number!")
     return(NULL)
   }
-##20180402
+  #weightDist
+  if(!is.numeric(weightDist)){
+    print("The type of 'weightDist' should be numeric!")
+    return(NULL)
+  }
+  #weightDens
+  if(!is.numeric(weightDens)){
+    print("The type of 'weightDens' should be numeric!")
+    return(NULL)
+  }
+  #bn
+  if(!is.numeric(bn)){
+    print("The type of 'bn' should be numeric!")
+    return(NULL)
+  }
+  #stop_rate
+  if(!is.numeric(stop_rate)){
+    print("The type of 'stop_rate' should be numeric!")
+    return(NULL)
+  }
+
   #Do parallel-----------------------------------------------------------------
   ncore<-detectCores()
   cl <- makeCluster(getOption("cl.cores", ncore))
   registerDoParallel(cl)
-  #memory.limit(3000)
-  #open parallel calculation
-  if(transformtype=="arsinh"){
-    transformed_datatable<-arsinh(origin_matrix)
-  }else if(transformtype=="none"){
-    transformed_datatable<-origin_matrix
-  }else{
-    print("No such kind of transformation provided.")
-    return(NULL)
-  }
 
-  ##Preclustering---------------------------------------------------------------
-  #Use one type of hierarchical clustering as the basic clustering tool
-  if((basecluster=="single")|(basecluster=="complete")|(basecluster=="average")){
-    hresult<-hclust(dist(transformed_datatable,method = "minkowski",p=bn),method = basecluster)
-    if (nrow(transformed_datatable)>1000){
-      hresult_cut <- cutree(hresult,k=1000)
+  ##step02.do preclustering----------------------------------------------------
+  if(dobasecluster==TRUE){
+    #do clustering on the first level
+    #Use one type of hierarchical clustering as the basic clustering tool
+    if((basecluster=="single")|(basecluster=="complete")|(basecluster=="average")){
+      hresult<-hclust(dist(transformed_matrix,method = "minkowski",p=bn),method = basecluster)
+      if (is.null(baseclusternum)){
+        baseclusternum <- ceiling(nrow(transformed_matrix)/10)
+        hresult_cut <- cutree(hresult,k=baseclusternum)
+      }else{
+        #user sets the baseclusternum parameter
+        hresult_cut <- cutree(hresult,k=baseclusternum)
+      }
     }else{
-      #Small dataset no need base clustering
-      hresult_cut <- cutree(hresult,k=nrow(transformed_datatable))
+      if (is.null(baseclusternum)){
+        baseclusternum <- ceiling(nrow(transformed_matrix)/10)
+        kmeansresult <- kmeans(transformed_matrix, centers=baseclusternum,iter.max = 500)
+        hresult_cut <- kmeansresult$cluster
+      }else{
+        #user sets the baseclusternum parameter
+        kmeansresult <- kmeans(transformed_matrix, centers=baseclusternum,iter.max = 500)
+        hresult_cut <- kmeansresult$cluster
+      }
     }
   }else{
-    if (nrow(transformed_datatable)>1000){
-      kmeansresult <- kmeans(transformed_datatable, centers=1000,iter.max = 500)
-      hresult_cut <- kmeansresult$cluster
-    }else{
-      #Small dataset no need base clustering
-      hresult_cut <- 1:nrow(transformed_datatable)
-    }
+    #do not do clustering on the first level
+    hresult_cut <- 1:nrow(transformed_matrix)
   }
-  #down sample data and retain the shape of each cluster
-  mingdan <- get_cluster_index(clusterIndex=hresult_cut)
-  statematrix <- get_statematrix(matrix=transformed_datatable, basecluster=hresult_cut)
 
-  rm_result<-get_scatter(mingdan,transformed_datatable,statematrix)
-  statematrix<-rm_result[[1]]
-  mingdan<-rm_result[[2]]
-  record_cut<-rm_result[[3]]
+  ##step03.estimate the density of each state----------------------------------
 
-  #Calculate the density of each state-----------------------------------------
-  if(nrow(statematrix)<1000){
-    densevector<-get_densityvector(matrix = statematrix)
-  }else{
-    densevector<-get_densityvector2(matrix1=statematrix,matrix2=transformed_datatable)
-  }
 
   ##Build the hierarchical structure-------------------------------------------
   #Find recurrent classes on the first level-----------------------------------
@@ -284,7 +312,7 @@ MarkovHC<-function(origin_matrix,
   origin_allresult<-get_origin_allresult(allresult=allresult,
                                          mingdan=mingdan)
   nbig<-detect_possible_num_cluster(allresult=origin_allresult,
-                                    totalnumber=nrow(transformed_datatable),
+                                    totalnumber=nrow(transformed_matrix),
                                     minrt=minrt)
   if(length(nbig)>1){
     if(bigmark<=1){
