@@ -166,11 +166,13 @@ MarkovHC<-function(origin_matrix,
   }
 
   ##step03.estimate the density of each state----------------------------------
+  densevector <-
 
-
-  ##Build the hierarchical structure-------------------------------------------
-  #Find recurrent classes on the first level-----------------------------------
+  ##step04.calculate the distance matrix
   dm <- as.matrix(dist(statematrix,method = "minkowski",p=bn))
+
+
+  ##step05. find recurrent classes on the first level--------------------------
   transitionMatrixOnFirstLevel<-transition_first_level(matrix=dm,
                                                        densevector=densevector,
                                                        weightDist=weightDist,

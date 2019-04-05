@@ -18,23 +18,6 @@ get_densityvector=function(matrix=NULL){
  return(densityvector)
 }
 
-#Calculate the density vector--------------------------------------------------
-get_densityvector2=function(matrix1=NULL,matrix2=NULL){
- set.seed(100)
- n1<-nrow(matrix1)
- n2<-nrow(matrix2)
- submatrix2<-matrix2[sample(1:n2,1000),]
- subdist<-dist(submatrix2,method = "euclidean",diag=F,upper = T,p=2)
- subdist<-as.vector(subdist)
- radius<-quantile(subdist,0.05)
- densityvector<-numeric(n1)
- for(i in 1:n1){
-   p<-rowSums(t(t(matrix2)-matrix1[i,])^2)
-   densityvector[i]<-sum(p<=radius^2)
- }
- return(densityvector)
-}
-
 #Generate a transition matrix on the first level------------------------------
 # transition_first_level=function(matrix=NULL,densevector=NULL,lambda=NULL){
 #   dense<-densevector
