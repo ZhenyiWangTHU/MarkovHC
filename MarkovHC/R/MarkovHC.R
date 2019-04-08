@@ -169,6 +169,8 @@ MarkovHC<-function(origin_matrix,
   KNN_graph_T[is.na(KNN_graph_T)] <- 0
   symmetric_KNN_graph <- KNN_graph+KNN_graph_T
   symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)] <- symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)]/2
+  symmetric_KNN_graph[symmetric_KNN_graph==0] <- Inf
+  diag(symmetric_KNN_graph) <- 0
 
   #estimate the denstiy on the graph
   densevector <-
