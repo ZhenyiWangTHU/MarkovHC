@@ -11,6 +11,8 @@
 #' @param transformtype A character parameter indicating what kind of
 #' tranformation('arsinh' or 'none')would be applied to the original matrix.
 #' Default is 'none'.
+#' @param KNN A interger indicates the number of neighbors in building the
+#' KNN graph. Default is 20.
 #' @param basecluster A character parameter indicating what kind of simple
 #' clustering methods would be used as a preliminary processinng method.
 #' Available choices include \code{single}, \code{complete}, \code{average}
@@ -48,6 +50,7 @@
 MarkovHC<-function(origin_matrix,
               minrt=50,
               transformtype="none",
+              KNN=20,
               basecluster="average",
               dobasecluster=FALSE,
               baseclusternum=NULL,
@@ -85,6 +88,12 @@ MarkovHC<-function(origin_matrix,
     transformed_matrix<-origin_matrix
   }else{
     print("This kind of 'transformtype' is unavailable right now!")
+    return(NULL)
+  }
+
+  #KNN
+  if(!is.numeric(KNN)){
+    print("The type of 'KNN' should be numeric!")
     return(NULL)
   }
 
@@ -136,7 +145,35 @@ MarkovHC<-function(origin_matrix,
   cl <- makeCluster(getOption("cl.cores", ncore))
   registerDoParallel(cl)
 
-  ##step02.do preclustering----------------------------------------------------
+  ##step02.estimate the density of each state----------------------------------
+  #step02.1 build a strongly connected KNN graph
+  dm <- as.matrix(dist(transformed_matrix,method = "minkowski",p=bn))
+  KNN_graph <- dm
+  bulid_KNN_row <- function(x,n=KNN){
+    cut <- x[order(x,decreasing = FALSE)][n+1]
+    x[which(x)>cut] <- Inf
+    return(x)
+  }
+  KNN_graph <- apply(X=KNN_graph, MARGIN = 1, bulid_KNN_row)
+  #convert asymmetric matrix to symmetric matrix
+  KNN_graph_T <- t(KNN_graph)
+  KNN_graph_index <- KNN_graph
+  KNN_graph_index[is.finite(KNN_graph_index)] <- 1
+  KNN_graph_index[is.infinite(KNN_graph_index)] <- 0
+  KNN_graph_T_index <- KNN_graph_T
+  KNN_graph_T_index[is.finite(KNN_graph_T_index)] <- 1
+  KNN_graph_T_index[is.infinite(KNN_graph_T_index)] <- 0
+  KNN_graph <- KNN_graph*KNN_graph_index
+  KNN_graph[is.na(KNN_graph)] <- 0
+  KNN_graph_T <- KNN_graph_T*KNN_graph_T_index
+  KNN_graph_T[is.na(KNN_graph_T)] <- 0
+  symmetric_KNN_graph <- KNN_graph+KNN_graph_T
+  symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)] <- symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)]/2
+
+  #estimate the denstiy on the graph
+  densevector <-
+
+  ##step03.do preclustering----------------------------------------------------
   if(dobasecluster==TRUE){
     #do clustering on the first level
     #Use one type of hierarchical clustering as the basic clustering tool
@@ -160,16 +197,17 @@ MarkovHC<-function(origin_matrix,
         hresult_cut <- kmeansresult$cluster
       }
     }
+    #downsampled the clustered samples based on density
+
+
+
   }else{
     #do not do clustering on the first level
     hresult_cut <- 1:nrow(transformed_matrix)
   }
 
-  ##step03.estimate the density of each state----------------------------------
-  densevector <-
-
   ##step04.calculate the distance matrix
-  dm <- as.matrix(dist(statematrix,method = "minkowski",p=bn))
+
 
 
   ##step05. find recurrent classes on the first level--------------------------
