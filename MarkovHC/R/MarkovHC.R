@@ -15,8 +15,8 @@
 #' KNN graph. Default is 20.
 #' @param basecluster A character parameter indicating what kind of simple
 #' clustering methods would be used as a preliminary processinng method.
-#' Available choices include \code{single}, \code{complete}, \code{average}
-#' and \code{kmeans}. Default is 'average'.
+#' Available choices include \code{clique}, \code{single}, \code{complete},
+#' \code{average} and \code{kmeans}. Default is 'clique'.
 #' @param dobasecluster A Bloolean parameter indicates wether to do clustering
 #' on the first level. Default is FALSE.
 #' @param baseclusternum A integer indicates the number of clusters on the
@@ -51,7 +51,7 @@ MarkovHC<-function(origin_matrix,
               minrt=50,
               transformtype="none",
               KNN=20,
-              basecluster="average",
+              basecluster="clique",
               dobasecluster=FALSE,
               baseclusternum=NULL,
               emphasizedistance=1,
@@ -102,8 +102,9 @@ MarkovHC<-function(origin_matrix,
     print("The type of 'basecluster' should be character!")
     return(NULL)
   }
-  if((basecluster=="single")|(basecluster=="complete")|
-     (basecluster=="average")|(basecluster=="kmeans")){
+  if((basecluster=="clique")|(basecluster=="single")|
+     (basecluster=="complete")|(basecluster=="average")|
+     (basecluster=="kmeans")){
     basecluster<-basecluster
   }else{
     print("This kind of 'basecluster' is unavailable right now!")
@@ -176,6 +177,7 @@ MarkovHC<-function(origin_matrix,
   densevector <-
 
   ##step03.do preclustering----------------------------------------------------
+  #Finding Maximum clique, hierarchical clustering or k-means clutering.
   if(dobasecluster==TRUE){
     #do clustering on the first level
     #Use one type of hierarchical clustering as the basic clustering tool
@@ -188,7 +190,7 @@ MarkovHC<-function(origin_matrix,
         #user sets the baseclusternum parameter
         hresult_cut <- cutree(hresult,k=baseclusternum)
       }
-    }else{
+    }else if(basecluster=="kmeans"){
       if (is.null(baseclusternum)){
         baseclusternum <- ceiling(nrow(transformed_matrix)/10)
         kmeansresult <- kmeans(transformed_matrix, centers=baseclusternum,iter.max = 500)
@@ -198,8 +200,14 @@ MarkovHC<-function(origin_matrix,
         kmeansresult <- kmeans(transformed_matrix, centers=baseclusternum,iter.max = 500)
         hresult_cut <- kmeansresult$cluster
       }
+    }else if(basecluster=='clique'){
+      #find all cliques in the graph
+
+      #merge clique as a single point, every distance to outgraph is the minimum distance from the clique to out_graph
+
     }
-    #downsampled the clustered samples based on density
+
+      #downsampled the clustered samples based on density
 
 
 
