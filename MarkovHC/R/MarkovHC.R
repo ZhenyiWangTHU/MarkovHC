@@ -226,25 +226,37 @@ MarkovHC<-function(origin_matrix,
         #find all maximum cliques on the graph
         maxcliques <- max_cliques(symmetric_KNN_graph_object)
         #regard a clique as a cluster
-        #merge clique as a single point, every distance to outgraph is the minimum distance from the clique to out_graph
         hresult_cut <- integer(length = nrow(transformed_matrix))
         for (index_maxcliques in 1:length(maxcliques)) {
           hresult_cut[as.integer(maxcliques[[index_maxcliques]])] <- index_maxcliques
         }
+     }
+    }else{
+     #do not do clustering on the first level
+     hresult_cut <- 1:nrow(transformed_matrix)
+    }
+    #merge a cluster as a single point
+    #or
+    #merge a clique as a single point
+    #every distance to out clusters is the minimum distance from the cluster to out clusters
+    unique_clusters <- unique(hresult_cut)
+    #merge rows
+    symmetric_KNN_graph_merged <- matrix(0,length(unique_clusters),nrow(transformed_matrix))
+    for(clusterindex in 1:length(unique_clusters)){
+      temp_cluster <- symmetric_KNN_graph[which(hresult_cut==clusterindex), ]
+      symmetric_KNN_graph_merged[clusterindex,] <- apply(temp_cluster, 2, min)
+    }
+    #merge columns
+    #each elements in symmetric_KNN_graph_cluster is the distance bwt clusters and clusters
+    symmetric_KNN_graph_cluster <- matrix(0,nrow(symmetric_KNN_graph_merged),nrow(symmetric_KNN_graph_merged))
+    for(clusterindex in 1:length(unique_clusters)){
+      for(clusterindex2 in 1:length(unique_clusters)){
+        temp_cluster <- symmetric_KNN_graph_merged[clusterindex, which(hresult_cut==clusterindex2)]
+        symmetric_KNN_graph_cluster[clusterindex, clusterindex2] <- min(temp_cluster)
+      }
     }
 
-      #downsampled the clustered samples based on density
-
-
-
-  }else{
-    #do not do clustering on the first level
-    hresult_cut <- 1:nrow(transformed_matrix)
-  }
-
-  ##step04.calculate the distance matrix
-
-
+  ##step04.
 
   ##step05. find recurrent classes on the first level--------------------------
   transitionMatrixOnFirstLevel<-transition_first_level(matrix=dm,
