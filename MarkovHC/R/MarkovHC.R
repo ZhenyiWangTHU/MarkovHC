@@ -146,43 +146,65 @@ MarkovHC<-function(origin_matrix,
   cl <- makeCluster(getOption("cl.cores", ncore))
   registerDoParallel(cl)
 
-  ##step02.estimate the density of each state----------------------------------
-  #step02.1 build a strongly connected KNN graph
-  dm <- as.matrix(dist(transformed_matrix,method = "minkowski",p=bn))
-  KNN_graph <- dm
-  bulid_KNN_row <- function(x,n=KNN){
-    cut <- x[order(x,decreasing = FALSE)][n+1]
-    x[which(x)>cut] <- Inf
-    return(x)
+  ##step02.calculate SNN and build a strongly connected KNN graph--------------
+  dm <- dist(transformed_matrix,method = "minkowski",p=bn)
+  #step02.1 use sNN function to calculate shared nearest neighbors
+  sNN_res <- sNN(x=dm,k=KNN,sort = FALSE)
+  #step02.2 build a strongly connected KNN graph
+  KNN_graph <- matrix(0,nrow(dm),ncol(dm))
+  for (i in 1:nrow(sNN_res$shared)) {
+    KNN_graph[i,sNN_res$id[i,]] <- sNN_res$shared[i,]
   }
-  KNN_graph <- apply(X=KNN_graph, MARGIN = 1, bulid_KNN_row)
   #convert asymmetric matrix to symmetric matrix
   KNN_graph_T <- t(KNN_graph)
   KNN_graph_index <- KNN_graph
-  KNN_graph_index[is.finite(KNN_graph_index)] <- 1
-  KNN_graph_index[is.infinite(KNN_graph_index)] <- 0
+  KNN_graph_index[which(KNN_graph_index>0)] <- Inf
   KNN_graph_T_index <- KNN_graph_T
-  KNN_graph_T_index[is.finite(KNN_graph_T_index)] <- 1
-  KNN_graph_T_index[is.infinite(KNN_graph_T_index)] <- 0
-  KNN_graph <- KNN_graph*KNN_graph_index
-  KNN_graph[is.na(KNN_graph)] <- 0
-  KNN_graph_T <- KNN_graph_T*KNN_graph_T_index
-  KNN_graph_T[is.na(KNN_graph_T)] <- 0
+  KNN_graph_T_index[which(KNN_graph_T_index>0)] <- Inf
   symmetric_KNN_graph <- KNN_graph+KNN_graph_T
-  symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)] <- symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)]/2
-  symmetric_KNN_graph[symmetric_KNN_graph==0] <- Inf
-  diag(symmetric_KNN_graph) <- 0
+  #the elements on double positive index should be divided by 2, do not need to do
+  #that on one or zero positive index.
+  symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)] <- symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)]/2
 
-  #estimate the denstiy on the graph
-  densevector <-
+  ##below method is deprecated because of slow calculateing speed
+  # KNN_graph <- as.matrix(dm)
+  # bulid_KNN_row <- function(x,n=KNN){
+  #   cut <- x[order(x,decreasing = FALSE)][n+1]
+  #   x[which(x)>cut] <- Inf
+  #   return(x)
+  # }
+  # KNN_graph <- apply(X=KNN_graph, MARGIN = 1, bulid_KNN_row)
+  # #convert asymmetric matrix to symmetric matrix
+  # KNN_graph_T <- t(KNN_graph)
+  # KNN_graph_index <- KNN_graph
+  # KNN_graph_index[is.finite(KNN_graph_index)] <- 1
+  # KNN_graph_index[is.infinite(KNN_graph_index)] <- 0
+  # KNN_graph_T_index <- KNN_graph_T
+  # KNN_graph_T_index[is.finite(KNN_graph_T_index)] <- 1
+  # KNN_graph_T_index[is.infinite(KNN_graph_T_index)] <- 0
+  # KNN_graph <- KNN_graph*KNN_graph_index
+  # KNN_graph[is.na(KNN_graph)] <- 0
+  # KNN_graph_T <- KNN_graph_T*KNN_graph_T_index
+  # KNN_graph_T[is.na(KNN_graph_T)] <- 0
+  # symmetric_KNN_graph <- KNN_graph+KNN_graph_T
+  # symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)] <- symmetric_KNN_graph[(KNN_graph_index==1)&(KNN_graph_T_index==1)]/2
+  # symmetric_KNN_graph[symmetric_KNN_graph==0] <- Inf
+  # diag(symmetric_KNN_graph) <- 0
+
+  ##another option is calculating the degree of each node in the graph, we take the degree as the density of the node here.
+  #use 'eigen_centrality' in igraph to find Eigenvector Centrality Scores of Network Positions.
+  symmetric_KNN_graph_sparse <- as(as.matrix(symmetric_KNN_graph), "dgCMatrix")%>%summary()%>%as.data.frame()
+  symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = FALSE)
+  graph_attr(symmetric_KNN_graph_object,'weight') <- symmetric_KNN_graph_sparse[,3]
+  centrality_scores <- eigen_centrality(symmetric_KNN_graph_object, weights = symmetric_KNN_graph_sparse[,3])$vector
 
   ##step03.do preclustering----------------------------------------------------
-  #Finding Maximum clique, hierarchical clustering or k-means clutering.
+  #hierarchical clustering or k-means clutering or finding Maximum clique.
   if(dobasecluster==TRUE){
     #do clustering on the first level
     #Use one type of hierarchical clustering as the basic clustering tool
     if((basecluster=="single")|(basecluster=="complete")|(basecluster=="average")){
-      hresult<-hclust(dist(transformed_matrix,method = "minkowski",p=bn),method = basecluster)
+      hresult<-hclust(dm,method = basecluster)
       if (is.null(baseclusternum)){
         baseclusternum <- ceiling(nrow(transformed_matrix)/10)
         hresult_cut <- cutree(hresult,k=baseclusternum)
@@ -201,10 +223,14 @@ MarkovHC<-function(origin_matrix,
         hresult_cut <- kmeansresult$cluster
       }
     }else if(basecluster=='clique'){
-      #find all cliques in the graph
-
-      #merge clique as a single point, every distance to outgraph is the minimum distance from the clique to out_graph
-
+        #find all maximum cliques on the graph
+        maxcliques <- max_cliques(symmetric_KNN_graph_object)
+        #regard a clique as a cluster
+        #merge clique as a single point, every distance to outgraph is the minimum distance from the clique to out_graph
+        hresult_cut <- integer(length = nrow(transformed_matrix))
+        for (index_maxcliques in 1:length(maxcliques)) {
+          hresult_cut[as.integer(maxcliques[[index_maxcliques]])] <- index_maxcliques
+        }
     }
 
       #downsampled the clustered samples based on density

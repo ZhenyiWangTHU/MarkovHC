@@ -10,7 +10,8 @@ high-dimensional data. We implement Markov hierarchical algorithm
 based on the metastability of exponentially perturbed Markov chain.
 Depends:R(>=3.5.1),
         parallel,
-        doParallel
+        doParallel,
+        dbscan
 Imports:
 License: GPL-3
 Encoding: UTF-8
