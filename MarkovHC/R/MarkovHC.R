@@ -141,7 +141,7 @@ MarkovHC<-function(origin_matrix,
     return(NULL)
   }
 
-  #Do parallel-----------------------------------------------------------------
+  #Do parallel
   ncore<-detectCores()
   cl <- makeCluster(getOption("cl.cores", ncore))
   registerDoParallel(cl)
@@ -191,7 +191,7 @@ MarkovHC<-function(origin_matrix,
   # symmetric_KNN_graph[symmetric_KNN_graph==0] <- Inf
   # diag(symmetric_KNN_graph) <- 0
 
-  ##another option is calculating the degree of each node in the graph, we take the degree as the density of the node here.
+  ##other options are calculating the degree or PageRank of each node in the graph, we take the degree as the density of the node here.
   #use 'eigen_centrality' in igraph to find Eigenvector Centrality Scores of Network Positions.
   symmetric_KNN_graph_sparse <- as(as.matrix(symmetric_KNN_graph), "dgCMatrix")%>%summary()%>%as.data.frame()
   symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = FALSE)
@@ -255,26 +255,46 @@ MarkovHC<-function(origin_matrix,
         symmetric_KNN_graph_cluster[clusterindex, clusterindex2] <- min(temp_cluster)
       }
     }
+    #calculate the centrality_scores of clusters
+    centrality_scores_cluster <- integer(length = length(unique_clusters))
+    for (score_index in 1:length(unique_clusters)) {
+      centrality_scores_tpm <- centrality_scores[which(hresult_cut==score_index)]
+      centrality_scores_cluster[score_index] <- mean(centrality_scores_tpm)
+    }
 
-  ##step04.
+  ## Main MarkovHC algorithm
+  ##step04. Calculate the transition probability matrix and the pseudo energy matrix
+  #step04.1 Calculate the transition probability matrix
+  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_cluster,
+                                           densevector=centrality_scores_cluster,
+                                           weightDist=weightDist,
+                                           weightDens=weightDens)
 
-  ##step05. find recurrent classes on the first level--------------------------
-  transitionMatrixOnFirstLevel<-transition_first_level(matrix=dm,
-                                                       densevector=densevector,
-                                                       weightDist=weightDist,
-                                                       weightDens=weightDens)
-  transitionMatrixOnFirstLevel<-modify_P(transitionMatrixOnFirstLevel,record_cut,densevector)
-  mediandm<-median(dm)
+  #step04.2 Calculate the pseudo energy matrix
+  C_matrix<-Calculate_C_Matrix(matrix=symmetric_KNN_graph_cluster,
+                               densevector=centrality_scores_cluster,
+                               emphasizedistance=emphasizedistance,
+                               weightDist=weightDist,
+                               weightDens=weightDens)
 
-  #Calculate C matrix----------------------------------------------------------
-  C<-Calculate_C_Matrix(GD=dm,
-                        densevector=densevector,
-                        emphasizedistance=emphasizedistance,
-                        weightDist=weightDist,
-                        weightDens=weightDens)
-  C<-modify_C(C,record_cut,densevector)
+  ##step05. Build the hierarchical structure-----------------------------------
+  #loop
+  while (TRUE) {
+    ##step05.1 Find basins and attractors
 
-  #Find attractors and basins on the first level-------------------------------
+
+    ##step05.2 update the transition probability matrix
+
+
+    ##step05.3 update the pseudo energy matrix
+
+
+  }
+
+
+
+
+
   resultOnTheFirstLevel<-rdv(P=transitionMatrixOnFirstLevel,
                              level=1,
                              densevector=densevector,
