@@ -278,174 +278,32 @@ MarkovHC<-function(origin_matrix,
                                weightDens=weightDens)
 
   ##step05. Build the hierarchical structure-----------------------------------
-  #loop
   while (TRUE) {
-    ##step05.1 Find basins and attractors
+    ##step05.1 find basins and attractors
 
 
-    ##step05.2 update the transition probability matrix
+    ##step05.2 update the pseudo energy matrix
 
 
-    ##step05.3 update the pseudo energy matrix
+    ##step05.3 update the transition probability matrix
 
 
+    ##step05.4 constructe the list to store the result of this level
+    basinsPoints <- list()
+    attractorsPoints <- list()
+    energyMatrix <- matrix()
+    transMatrix <- matrix()
+    basinNum <- length(basinsPoints)
+    level_result <- list(basins=basinsPoints,
+                         attractors=attractorsPoints,
+                         energyMatrix=energyMatrix,
+                         transMatrix=transMatrix,
+                         basinNum=basinNum)
+    ##step05.5 constructe the list to store the result of MarkovHC algorithm
+    MarkovHC_result <- c(MarkovHC_result, level_result)
   }
 
 
 
 
-
-  resultOnTheFirstLevel<-rdv(P=transitionMatrixOnFirstLevel,
-                             level=1,
-                             densevector=densevector,
-                             showprocess=showprocess)
-  allresult<-list()
-  allresult[[1]]<-resultOnTheFirstLevel
-
-  #Find the shortest path
-  ips<-Inner_Path_Dijk(output=resultOnTheFirstLevel,
-                       C=C)
-  #The inner path
-  ip<-ips[["ip"]]
-  newlist<-ips[["newlist"]]
-  #Find the target boundary
-  TBresult<-find_TB(ip,C,-1)
-  #Generate the transition matrix on level1
-  C_jump <- c()
-  GP_result<-generateTransitionMatirx1(TBresult=TBresult,
-                                       output=resultOnTheFirstLevel)
-  TBresult<-find_TB(ip,C,GP_result[[2]])
-  GP_result<-generateTransitionMatirx1(TBresult=TBresult,
-                                       output=resultOnTheFirstLevel)
-  P <- GP_result[[1]]
-  C_jump <- c(C_jump, GP_result[[2]])
-  C_distribution <- list(GP_result[[3]])
-  #The number of basins on level1
-  current_m<-resultOnTheFirstLevel[[1]]$number
-  #minimum ratio to be a cluster
-  clusterQualification<-ceiling(nrow(statematrix)/minrt)
-  #the Current level
-  current_level <- 1
-  if(showprocess){
-    print(paste("Building the level", as.character(current_level), sep = " "))
-  }
-  #The biggest number of basins on a level in this structure
-  bigmark<-0
-  #The level index
-  bj<-2
-  #This loop aims to find attractors and basins on higher levels and bulid the-
-  #whole hierarchical structure------------------------------------------------
-  while (TRUE){
-    #如果合格的大类只剩下一个，而且层数超过5了，而且巅峰大类数超过2，而且被合进合格大类的点数超过了stop_rate这个比例
-    if(length(which(lengths(resultOnTheFirstLevel[[2]])>=clusterQualification))<=1&bj>5&bigmark>2&(length(unique(unlist(resultOnTheFirstLevel[[2]][which(lengths(resultOnTheFirstLevel[[2]])>=clusterQualification)])))>(stop_rate*nrow(statematrix)))){break}
-    current_level <- current_level+1
-    if(showprocess){
-      print(paste("Building the level", as.character(current_level), sep = " "))
-    }
-    outputt2<-buildHigherLevel(output=resultOnTheFirstLevel,
-                               P=P,
-                               showprocess=showprocess)
-
-    if(resultOnTheFirstLevel[[1]]$number==outputt2[[1]]$number){
-      GP_result<-generate_P(soresult=TBresult,
-                            output=resultOnTheFirstLevel,
-                            oldoutput=allresult[[bj-2]],
-                            totalnumber=nrow(statematrix),
-                            strengthen=TRUE,
-                            showprocess=showprocess)
-      P <- GP_result[[1]]
-      outputt2<-buildHigherLevel(resultOnTheFirstLevel,P)
-      if(resultOnTheFirstLevel[[1]]$number==outputt2[[1]]$number){
-        GP_result<-generate_P(soresult=TBresult,
-                              output=resultOnTheFirstLevel,
-                              oldoutput=allresult[[bj-2]],
-                              totalnumber=nrow(statematrix),
-                              strengthen=TRUE,
-                              mark=1,
-                              showprocess=showprocess)
-        P <- GP_result[[1]]
-        outputt2<-buildHigherLevel(resultOnTheFirstLevel,P)
-      }
-    }
-
-    newresult<-find_shortest_out_dijk_plus(C=C,
-                                           output=outputt2,
-                                           oldoutput=resultOnTheFirstLevel,
-                                           oldTBresult=TBresult,
-                                           oldlist=newlist,
-                                           cp=-1)
-    TBresult_temp<-newresult[[1]]
-    newlist_temp<-newresult[[2]]
-    resultOnTheFirstLevel_temp<-outputt2
-    allresult[[bj]]<-resultOnTheFirstLevel_temp
-    bj<-bj+1
-    if(showprocess){
-      message(paste("from level",as.character(bj-1),"to level",as.character(bj),sep = " "))
-    }
-    GP_result<-generate_P(soresult=TBresult_temp,
-                          output=resultOnTheFirstLevel_temp,
-                          oldoutput=allresult[[bj-2]],
-                          totalnumber=nrow(statematrix),
-                          showprocess=showprocess)
-
-    newresult<-find_shortest_out_dijk_plus(C=C,
-                                           output=outputt2,
-                                           oldoutput=resultOnTheFirstLevel,
-                                           oldTBresult=TBresult,
-                                           oldlist=newlist,
-                                           GP_result[[2]])
-    TBresult<-newresult[[1]]
-    newlist<-newresult[[2]]
-    resultOnTheFirstLevel<-outputt2
-    GP_result<-generate_P(soresult=TBresult,
-                          output=resultOnTheFirstLevel,
-                          oldoutput=allresult[[bj-2]],
-                          totalnumber=nrow(statematrix),
-                          showprocess=showprocess)
-
-    P <- GP_result[[1]]
-    C_jump <- c(C_jump, GP_result[[2]])
-    C_distribution <- c(C_distribution, list(GP_result[[3]]))
-    current_m<-resultOnTheFirstLevel[[1]]$number
-    if(current_m==1){
-      break
-    }
-    #update bigmark
-    if(length(which(lengths(resultOnTheFirstLevel[[2]])>=clusterQualification))>bigmark){
-      bigmark<-length(which(lengths(resultOnTheFirstLevel[[2]])>=clusterQualification))
-    }
-  }
-
-  #Form neat output-----------------------------------------------------------
-  origin_allresult<-get_origin_allresult(allresult=allresult,
-                                         mingdan=mingdan)
-  nbig<-detect_possible_num_cluster(allresult=origin_allresult,
-                                    totalnumber=nrow(transformed_matrix),
-                                    minrt=minrt)
-  if(length(nbig)>1){
-    if(bigmark<=1){
-      print("The setting of minrt may be too small! The result is meaningless.")
-    }
-  }
-  #Output the results----------------------------------------------------------
-  endresult<-list()
-  endresult[["origin_allresult"]]<-origin_allresult
-  endresult[["number_of_clusters"]]<-nbig
-  endresult[["inputparameter"]]<-list()
-  endresult[["inputparameter"]][["minrt"]]<-minrt
-  endresult[["inputparameter"]][["transformtype"]]<-transformtype
-  endresult[["inputparameter"]][["basecluster"]]<-basecluster
-  endresult[["inputparameter"]][["emphasizedistance"]]<-emphasizedistance
-  endresult[["inputparameter"]][["stoprate"]]<-stop_rate
-  endresult[["inputparameter"]][["fanshu"]]<-bn
-  endresult[["midparameter"]]<-list()
-  endresult[["midparameter"]][["C_jump"]] <- C_jump
-  endresult[["midparameter"]][["C_distribution"]] <- C_distribution
-  endresult[["midparameter"]][["mediandm"]]<-mediandm
-  endresult[["midparameter"]][["C"]]<-C
-  endresult[["midparameter"]][["allresult"]]<-allresult
-  endresult[["midparameter"]][["densevector"]]<-densevector
-  endresult[["midparameter"]][["transitionMatrixOnFirstLevel"]]<-transitionMatrixOnFirstLevel
-  stopCluster(cl)
-  return(endresult)
 }
