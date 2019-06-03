@@ -29,7 +29,7 @@ transition_probability=function(matrix=NULL,
 }
 
 ##Function3:Calculate the pseudo energy matrix---------------------------------
-Calculate_C_Matrix<-function(matrix=NULL,
+Calculate_C_Matrix = function(matrix=NULL,
                              densevector=NULL,
                              emphasizedistance=NULL,
                              weightDist=NULL,

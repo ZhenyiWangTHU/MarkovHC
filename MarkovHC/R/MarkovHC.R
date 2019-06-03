@@ -255,6 +255,11 @@ MarkovHC<-function(origin_matrix,
         symmetric_KNN_graph_cluster[clusterindex, clusterindex2] <- min(temp_cluster)
       }
     }
+
+    #the edges of non-neighbors should be set to zero
+   ??? symmetric_KNN_graph_cluster_replace_no_with_Inf <- symmetric_KNN_graph_cluster
+   ??? symmetric_KNN_graph_cluster_replace_no_with_Inf[which(symmetric_KNN_graph_cluster_replace_no_with_Inf)==0] <- Inf
+
     #calculate the centrality_scores of clusters
     centrality_scores_cluster <- integer(length = length(unique_clusters))
     for (score_index in 1:length(unique_clusters)) {
@@ -265,13 +270,13 @@ MarkovHC<-function(origin_matrix,
   ## Main MarkovHC algorithm
   ##step04. Calculate the transition probability matrix and the pseudo energy matrix
   #step04.1 Calculate the transition probability matrix
-  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_cluster,
+  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_cluster_replace_no_with_Inf,
                                            densevector=centrality_scores_cluster,
                                            weightDist=weightDist,
                                            weightDens=weightDens)
 
   #step04.2 Calculate the pseudo energy matrix
-  C_matrix<-Calculate_C_Matrix(matrix=symmetric_KNN_graph_cluster,
+  C_matrix<-Calculate_C_Matrix(matrix=symmetric_KNN_graph_cluster_replace_no_with_Inf,
                                densevector=centrality_scores_cluster,
                                emphasizedistance=emphasizedistance,
                                weightDist=weightDist,
@@ -280,12 +285,17 @@ MarkovHC<-function(origin_matrix,
   ##step05. Build the hierarchical structure-----------------------------------
   while (TRUE) {
     ##step05.1 find basins and attractors
+    RS_vector <- judge_RS(P=transitionMatrix)
+
+
 
 
     ##step05.2 update the pseudo energy matrix
 
 
+
     ##step05.3 update the transition probability matrix
+
 
 
     ##step05.4 constructe the list to store the result of this level
