@@ -283,11 +283,15 @@ MarkovHC<-function(origin_matrix,
                                weightDens=weightDens)
 
   ##step05. Build the hierarchical structure-----------------------------------
+  P_updated <- transitionMatrix
   while (TRUE) {
     ##step05.1 find basins and attractors
     RS_vector <- judge_RS(P=transitionMatrix)
+    processed_attractors <- integer(length = length(RS_vector))
+    while(TRUE){
 
 
+    }
 
 
     ##step05.2 update the pseudo energy matrix
