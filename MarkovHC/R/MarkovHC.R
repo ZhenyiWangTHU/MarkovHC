@@ -29,6 +29,8 @@
 #' Default is 2.
 #' @param weightDens A numeric parameter indicates the power of density.
 #' Default is 0.5.
+#' @param cutpoint A numeric value in [0,1] indicates the threshold of
+#' the quantile of pseudo energy, default is 0.05.
 #' @param showprocess A Boolean parameter indicating whether to print
 #' intermediate information.Default is FALSE.
 #' @param bn A numeric parameter indicates the power of the Minkowski distance.
@@ -57,6 +59,7 @@ MarkovHC<-function(origin_matrix,
               emphasizedistance=1,
               weightDist=2,
               weightDens=0.5,
+              cutpoint=0.05,
               showprocess=FALSE,
               bn=2,
               stop_rate=1){
@@ -130,6 +133,11 @@ MarkovHC<-function(origin_matrix,
     print("The type of 'weightDens' should be numeric!")
     return(NULL)
   }
+  #cutpoint
+  if(!is.numeric(cutpoint)){
+    print("The type of 'cutpoint' should be numeric!")
+    return(NULL)
+  }
   #bn
   if(!is.numeric(bn)){
     print("The type of 'bn' should be numeric!")
@@ -195,7 +203,7 @@ MarkovHC<-function(origin_matrix,
   ##other options are calculating the degree or PageRank of each node in the graph, we take the degree as the density of the node here.
   #use 'eigen_centrality' in igraph to find Eigenvector Centrality Scores of Network Positions.
   symmetric_KNN_graph_sparse <- as(as.matrix(symmetric_KNN_graph), "dgCMatrix")%>%summary()%>%as.data.frame()
-  symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = FALSE)
+  symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = TRUE)
   graph_attr(symmetric_KNN_graph_object,'weight') <- symmetric_KNN_graph_sparse[,3]
   centrality_scores <- eigen_centrality(symmetric_KNN_graph_object, weights = symmetric_KNN_graph_sparse[,3])$vector
 
@@ -270,54 +278,77 @@ MarkovHC<-function(origin_matrix,
   ## Main MarkovHC algorithm
   ##step04. Calculate the transition probability matrix and the pseudo energy matrix
   #step04.1 Calculate the transition probability matrix
-  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_similarity,
+  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_similarity_cluster,
                                            densevector=centrality_scores_cluster,
                                            weightDist=weightDist,
                                            weightDens=weightDens)
 
   #step04.2 Calculate the pseudo energy matrix
-  C_matrix<-Calculate_C_Matrix(matrix=symmetric_KNN_graph_similarity,
-                               densevector=centrality_scores_cluster,
-                               emphasizedistance=emphasizedistance,
-                               weightDist=weightDist,
-                               weightDens=weightDens)
+  C_matrix <- Calculate_C_Matrix(matrix=symmetric_KNN_graph_similarity_cluster,
+                                densevector=centrality_scores_cluster,
+                                emphasizedistance=emphasizedistance,
+                                weightDist=weightDist,
+                                weightDens=weightDens)
+  C_matrix_graph_sparse <- as(as.matrix(C_matrix), "dgCMatrix")%>%summary()%>%as.data.frame()
+  C_matrix_graph_object <- make_graph(t(C_matrix_graph_sparse[,1:2]), directed = TRUE)
+  graph_attr(C_matrix_graph_object,'weight') <- C_matrix_graph_sparse[,3]
 
   ##step05. Build the hierarchical structure-----------------------------------
   P_updated <- transitionMatrix
+  MarkovHC_result <- list()
   while (TRUE) {
     ##step05.1 find basins and attractors
-    RS_vector <- judge_RS(P=transitionMatrix)
+    RS_vector <- judge_RS(P=P_updated)
+
+    ##step05.2 constructe the list to store the result of this level
+    attractorsPoints <- list()
+    basinsPoints <- list()
+
+    ##step05.3 partition the state space
     processed_attractors <- integer(length = length(RS_vector))
     while(TRUE){
-
-
+     if(all(processed_attractors==1)){break}
+     attractor_temp <- which(processed_attractors==0)[1]
+     processed_attractors[attractor_temp] <- 1
+     P_updated_graph_sparse <- as(as.matrix(P_updated), "dgCMatrix")%>%summary()%>%as.data.frame()
+     P_updated_graph_object <- make_graph(t(P_updated_graph_sparse[,1:2]), directed = TRUE)
+     graph_attr(P_updated_graph_object,'weight') <- P_updated_graph_sparse[,3]
+     attractor_temp_access <- all_simple_paths(graph = P_updated_graph_object, from = attractor_temp,
+                                               mode = 'out')%>%unlist()%>%unique()
+     processed_attractors[attractor_temp_access] <- 1
+     attractorsPoints <- c(attractorsPoints, list(unique(c(attractor_temp_access, attractor_temp))))
+     basins_temp_merged <- c()
+       for (i in unique(c(attractor_temp_access, attractor_temp))) {
+         basins_temp <- all_simple_paths(graph = P_updated_graph_object, from = i,
+                                         mode = 'in')%>%unlist()%>%unique()
+         basins_temp_merged <- c(basins_temp_merged, basins_temp)
+       }
+     basinsPoints <- c(basinsPoints, list(unique(basins_temp_merged)))
     }
-
-
-    ##step05.2 update the pseudo energy matrix
-
-
-
-    ##step05.3 update the transition probability matrix
-    #find the shortest path https://igraph.org/r/doc/distances.html
-
-
-    ##step05.4 constructe the list to store the result of this level
-    basinsPoints <- list()
-    attractorsPoints <- list()
-    energyMatrix <- matrix()
-    transMatrix <- matrix()
     basinNum <- length(basinsPoints)
     level_result <- list(basins=basinsPoints,
                          attractors=attractorsPoints,
-                         energyMatrix=energyMatrix,
-                         transMatrix=transMatrix,
                          basinNum=basinNum)
-    ##step05.5 constructe the list to store the result of MarkovHC algorithm
+
+    ##step05.4 update the pseudo energy matrix
+    C_matrix_updated <- matrix(data = 0, nrow = basinNum, ncol = basinNum)
+    for (i in 1:basinNum) {
+      for (j in 1:basinNum) {
+        if(i==j){next}
+        C_matrix_updated[i,j] <- distances(graph = C_matrix_graph_object,
+                                           v = attractorsPoints[[i]],
+                                           to = basinsPoints[[j]],
+                                           mode = 'out',
+                                           weights = graph_attr(C_matrix_graph_object,'weight'),
+                                           algorithm = "dijkstra")%>%min()
+      }
+    }
+
+    ##step05.5 update the transition probability matrix
+    P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
+
+    ##step05.6 constructe the list to store the result of MarkovHC algorithm
     MarkovHC_result <- c(MarkovHC_result, level_result)
+    if(basinNum==1){return(MarkovHC_result)}
   }
-
-
-
-
 }

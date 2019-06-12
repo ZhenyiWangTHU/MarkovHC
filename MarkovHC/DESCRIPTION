@@ -11,7 +11,8 @@ based on the metastability of exponentially perturbed Markov chain.
 Depends:R(>=3.5.1),
         parallel,
         doParallel,
-        dbscan
+        dbscan,
+        igraph
 Imports:
 License: GPL-3
 Encoding: UTF-8

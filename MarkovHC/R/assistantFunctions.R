@@ -52,71 +52,17 @@ Calculate_C_Matrix = function(matrix=NULL,
  return(C)
 }
 
-
-
-
-
-#Union of a part of list components-------------------------------------------
-bing<-function(c,m){
- ## c is a list containing several sets and m is an index set, we will
- ## union those sets in c whose index is in m
- g<-vector()
- for(i in m){
-   g<-union(g,c[[i]])
- }
- return(g)
+##Function4:Update the transition matrix
+update_P = function(C_matrix_updated=NULL,
+                    C_cut=0.05){
+  basinNum <- nrow(C_matrix_updated)
+  cutpoint <- quantile(C_matrix_updated,probs = C_cut)
+  p_updated <- C_matrix_updated
+  p_updated[which(C_matrix_updated>cutpoint)] <- 0
+  p_updated[which(C_matrix_updated<cutpoint)] <- 1
+  p_updated <- p_updated/rowSums(p_updated)
+  return(p_updated)
 }
-
-
-#An assistant function for calculating cluster Ratio--------------------------
-clusterRatio = function(endResult = None,
-                       level=None,
-                       clusterNum=None){
- clusterSize <- lengths(endResult$origin_allresult[[level]][[2]])
- clusterSize <- sort(clusterSize)
- ratio = sum(clusterSize[(length(clusterSize)-clusterNum+1):length(clusterSize)])/sum(clusterSize)
- return(ratio)
-}
-
-#An assistant function to modify the first transition matrix
-modify_P<-function(P_tran,record_cut,densevector){
- #this function is used to strengthen the status of center points
- if(length(record_cut)==1){
-   return(P_tran)
- }
- P<-P_tran
- for(i in 1:(length(record_cut)-1)){
-   P[(record_cut[i]+1):(record_cut[i+1]-1),record_cut[i]]<-1
-   startp<-(record_cut[i]+1)
-   endp<-(record_cut[i+1]-1)
-   s<-which(densevector[startp:endp]/densevector[record_cut[i]]>1/1.05)
-   P[record_cut[i],(startp:endp)[s]]<-1
- }
- P<-(P/rowSums(P))
- return(P)
-}
-
-#An assistant function to modify the C matrix
-modify_C<-function(C,record_cut,densevector){
- #this function is used to do some resonable modifications on C to get rid of the influence of taking representatives
- if(length(record_cut)==1){
-   return(C)
- }
- CT<-C
- for(i in 1:(length(record_cut)-1)){
-   CT[(record_cut[i]+1):(record_cut[i+1]-1),record_cut[i]]<-0
-   startp<-(record_cut[i]+1)
-   endp<-(record_cut[i+1]-1)
-   s<-which(densevector[startp:endp]/densevector[record_cut[i]]>1/1.05)
-   CT[record_cut[i],(startp:endp)[s]]<-0
- }
- return(CT)
-}
-
-
-
-
-
 
 
 
