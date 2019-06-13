@@ -267,7 +267,7 @@ MarkovHC<-function(origin_matrix,
         symmetric_KNN_graph_similarity_cluster[clusterindex, clusterindex2] <- min(temp_cluster)
       }
     }
-
+   diag(symmetric_KNN_graph_similarity_cluster) <- max(symmetric_KNN_graph_similarity_cluster)
     #calculate the centrality_scores of clusters
     centrality_scores_cluster <- integer(length = length(unique_clusters))
     for (score_index in 1:length(unique_clusters)) {
@@ -285,10 +285,10 @@ MarkovHC<-function(origin_matrix,
 
   #step04.2 Calculate the pseudo energy matrix
   C_matrix <- Calculate_C_Matrix(matrix=symmetric_KNN_graph_similarity_cluster,
-                                densevector=centrality_scores_cluster,
-                                emphasizedistance=emphasizedistance,
-                                weightDist=weightDist,
-                                weightDens=weightDens)
+                                 densevector=centrality_scores_cluster,
+                                 emphasizedistance=emphasizedistance,
+                                 weightDist=weightDist,
+                                 weightDens=weightDens)
   C_matrix_graph_sparse <- as(as.matrix(C_matrix), "dgCMatrix")%>%summary()%>%as.data.frame()
   C_matrix_graph_object <- make_graph(t(C_matrix_graph_sparse[,1:2]), directed = TRUE)
   graph_attr(C_matrix_graph_object,'weight') <- C_matrix_graph_sparse[,3]
@@ -296,13 +296,35 @@ MarkovHC<-function(origin_matrix,
   ##step05. Build the hierarchical structure-----------------------------------
   P_updated <- transitionMatrix
   MarkovHC_result <- list()
+  #Store the result of base clustering
+  attractors <- list()
+  basins <- list()
+  attractorPoints <- list()
+  basinPoints <- list()
+  for (i in 1:length(unique_clusters)) {
+    attractors <- c(attractors, list(i))
+    basins <- c(basins, list(i))
+    clusterPoints <- which(hresult_cut==i)
+    attractorPoints <- c(attractorPoints, list(clusterPoints))
+    basinPoints <- c(basinPoints, list(basinPoints))
+  }
+  basinNum <- length(attractors)
+  level_result <- list(basins=basins,
+                       attractors=attractors,
+                       basinPoints=basinPoints,
+                       attractorPoints=attractorPoints,
+                       basinNum=basinNum)
+  MarkovHC_result <- c(MarkovHC_result, level_result)
+  levels_indice <- 1
   while (TRUE) {
     ##step05.1 find basins and attractors
     RS_vector <- judge_RS(P=P_updated)
 
     ##step05.2 constructe the list to store the result of this level
-    attractorsPoints <- list()
-    basinsPoints <- list()
+    attractors <- list()
+    basins <- list()
+    attractorPoints <- list()
+    basinPoints <- list()
 
     ##step05.3 partition the state space
     processed_attractors <- integer(length = length(RS_vector))
@@ -316,39 +338,90 @@ MarkovHC<-function(origin_matrix,
      attractor_temp_access <- all_simple_paths(graph = P_updated_graph_object, from = attractor_temp,
                                                mode = 'out')%>%unlist()%>%unique()
      processed_attractors[attractor_temp_access] <- 1
-     attractorsPoints <- c(attractorsPoints, list(unique(c(attractor_temp_access, attractor_temp))))
+     attractors <- c(attractors, list(unique(c(attractor_temp_access, attractor_temp))))
      basins_temp_merged <- c()
        for (i in unique(c(attractor_temp_access, attractor_temp))) {
          basins_temp <- all_simple_paths(graph = P_updated_graph_object, from = i,
                                          mode = 'in')%>%unlist()%>%unique()
          basins_temp_merged <- c(basins_temp_merged, basins_temp)
        }
-     basinsPoints <- c(basinsPoints, list(unique(basins_temp_merged)))
+     basins <- c(basins, list(unique(basins_temp_merged)))
     }
-    basinNum <- length(basinsPoints)
-    level_result <- list(basins=basinsPoints,
-                         attractors=attractorsPoints,
-                         basinNum=basinNum)
 
-    ##step05.4 update the pseudo energy matrix
+    ##step05.4 assign the points to basins and attractors
+    basinNum <- length(basins)
+    for (i in 1:basinNum){
+        #assign attractor points
+        attractorPoints_temp <- level_result$attractorPoints[attractors[[i]]]%>%unlist()%>%unique()
+        attractorPoints <- c(attractorPoints, list(attractorPoints_temp))
+        #assign basin points
+        basinPoints_temp <- level_result$basinPoints[basins[[i]]]%>%unlist()%>%unique()
+        basinPoints <- c(basinPoints, list(basinPoints_temp))
+    }
+    ##step05.5 update the pseudo energy matrix
     C_matrix_updated <- matrix(data = 0, nrow = basinNum, ncol = basinNum)
     for (i in 1:basinNum) {
       for (j in 1:basinNum) {
         if(i==j){next}
         C_matrix_updated[i,j] <- distances(graph = C_matrix_graph_object,
-                                           v = attractorsPoints[[i]],
-                                           to = basinsPoints[[j]],
+                                           v = attractors[[i]],
+                                           to = basins[[j]],
                                            mode = 'out',
                                            weights = graph_attr(C_matrix_graph_object,'weight'),
                                            algorithm = "dijkstra")%>%min()
       }
     }
 
-    ##step05.5 update the transition probability matrix
+    ##step05.6 update the transition probability matrix
     P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
 
-    ##step05.6 constructe the list to store the result of MarkovHC algorithm
+    ##step05.7 constructe the list to store the result of MarkovHC algorithm
+    level_result <- list(basins=basins,
+                         attractors=attractors,
+                         basinPoints=basinPoints,
+                         attractorPoints=attractorPoints,
+                         basinNum=basinNum)
     MarkovHC_result <- c(MarkovHC_result, level_result)
-    if(basinNum==1){return(MarkovHC_result)}
+    levels_indice <- levels_indice + 1
+    if(basinNum==1){
+      ##step06. Output the results---------------------------------------------
+      #The input parameters
+      inputParameters <- list(
+        minrt=minrt,
+        transformtype=transformtype,
+        KNN=KNN,
+        basecluster=basecluster,
+        dobasecluster=dobasecluster,
+        baseclusternum=baseclusternum,
+        emphasizedistance=emphasizedistance,
+        weightDist=weightDist,
+        weightDens=weightDens,
+        cutpoint=cutpoint,
+        showprocess=showprocess,
+        bn=bn,
+        stop_rate=stop_rate
+      )
+      #The results among the process
+      midResults <- list(
+        symmetric_KNN_graph_object = symmetric_KNN_graph_object,
+        centrality_scores = centrality_scores,
+        symmetric_KNN_graph_similarity_cluster = symmetric_KNN_graph_similarity_cluster,
+        centrality_scores_cluster = centrality_scores_cluster,
+        transitionMatrix = transitionMatrix
+      )
+      #The MarkovHC object
+      MarkovHC_object <- list(
+        hierarchicalStructure = MarkovHC_result,
+        inputParameters = inputParameters,
+        midResults = midResults
+      )
+      stopCluster(cl)
+      return(MarkovHC_object)
+    }
   }
 }
+
+
+
+
+

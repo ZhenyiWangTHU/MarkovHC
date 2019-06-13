@@ -1,5 +1,6 @@
 #We deposit assiatant functions for main function "MarkovHC" in this file.
 #And would not be exported to users.
+
 ##Function1:Transform----------------------------------------------------------
 arsinh=function(x=NULL){
  return(log(x+sqrt(x^2+1)))
@@ -30,10 +31,10 @@ transition_probability=function(matrix=NULL,
 
 ##Function3:Calculate the pseudo energy matrix---------------------------------
 Calculate_C_Matrix = function(matrix=NULL,
-                             densevector=NULL,
-                             emphasizedistance=NULL,
-                             weightDist=NULL,
-                             weightDens=NULL){
+                              densevector=NULL,
+                              emphasizedistance=NULL,
+                              weightDist=NULL,
+                              weightDens=NULL){
  m<-length(densevector)
  dense<-as.numeric(densevector)
  G_matrix <- matrix^emphasizedistance
