@@ -49,7 +49,7 @@
 #' @author Zhenyi Wang
 #' @export
 
-MarkovHC<-function(origin_matrix,
+MarkovHC = function(origin_matrix,
               minrt=50,
               transformtype="none",
               KNN=20,
@@ -275,7 +275,7 @@ MarkovHC<-function(origin_matrix,
       centrality_scores_cluster[score_index] <- mean(centrality_scores_tpm)
     }
 
-  ## Main MarkovHC algorithm
+  ## Main part of MarkovHC algorithm
   ##step04. Calculate the transition probability matrix and the pseudo energy matrix
   #step04.1 Calculate the transition probability matrix
   transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_similarity_cluster,
