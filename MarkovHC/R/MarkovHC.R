@@ -247,27 +247,24 @@ MarkovHC = function(origin_matrix,
     #merge a cluster as a single point
     #or
     #merge a clique as a single point
-    #every distance to out clusters is the minimum distance from the cluster to out clusters
+    #every similarity to other clusters is the maximum similarity between the cluster with other clusters
     unique_clusters <- unique(hresult_cut)
-    #replace the 0 in graph with Inf, convert the graph matrix to the similarity matrix
-    symmetric_KNN_graph_similarity <- symmetric_KNN_graph
-    symmetric_KNN_graph_similarity[which(symmetric_KNN_graph_similarity)==0] <- Inf
     #merge rows
-    symmetric_KNN_graph_similarity_merged <- matrix(0,length(unique_clusters),nrow(transformed_matrix))
+    symmetric_KNN_graph_merged <- matrix(0,length(unique_clusters),nrow(transformed_matrix))
     for(clusterindex in 1:length(unique_clusters)){
-      temp_cluster <- symmetric_KNN_graph_similarity[which(hresult_cut==clusterindex), ]
-      symmetric_KNN_graph_similarity_merged[clusterindex,] <- apply(temp_cluster, 2, min)
+      temp_cluster <- symmetric_KNN_graph[which(hresult_cut==clusterindex), ]
+      symmetric_KNN_graph_merged[clusterindex,] <- apply(temp_cluster, 2, max)
     }
     #merge columns
-    #each elements in symmetric_KNN_graph_similarity_cluster is the distance bwt clusters and clusters
-    symmetric_KNN_graph_similarity_cluster <- matrix(0,nrow(symmetric_KNN_graph_similarity_merged),nrow(symmetric_KNN_graph_similarity_merged))
+    #each elements in symmetric_KNN_graph_cluster is the similarity bwt clusters and clusters
+    symmetric_KNN_graph_cluster <- matrix(0,nrow(symmetric_KNN_graph_merged),nrow(symmetric_KNN_graph_merged))
     for(clusterindex in 1:length(unique_clusters)){
       for(clusterindex2 in 1:length(unique_clusters)){
-        temp_cluster <- symmetric_KNN_graph_similarity_merged[clusterindex, which(hresult_cut==clusterindex2)]
-        symmetric_KNN_graph_similarity_cluster[clusterindex, clusterindex2] <- min(temp_cluster)
+        temp_cluster <- symmetric_KNN_graph_merged[clusterindex, which(hresult_cut==clusterindex2)]
+        symmetric_KNN_graph_cluster[clusterindex, clusterindex2] <- max(temp_cluster)
       }
     }
-   diag(symmetric_KNN_graph_similarity_cluster) <- max(symmetric_KNN_graph_similarity_cluster)
+    diag(symmetric_KNN_graph_cluster) <- min(symmetric_KNN_graph_cluster)
     #calculate the centrality_scores of clusters
     centrality_scores_cluster <- integer(length = length(unique_clusters))
     for (score_index in 1:length(unique_clusters)) {
@@ -278,13 +275,13 @@ MarkovHC = function(origin_matrix,
   ## Main part of MarkovHC algorithm
   ##step04. Calculate the transition probability matrix and the pseudo energy matrix
   #step04.1 Calculate the transition probability matrix
-  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_similarity_cluster,
+  transitionMatrix<-transition_probability(matrix=symmetric_KNN_graph_cluster,
                                            densevector=centrality_scores_cluster,
                                            weightDist=weightDist,
                                            weightDens=weightDens)
 
   #step04.2 Calculate the pseudo energy matrix
-  C_matrix <- Calculate_C_Matrix(matrix=symmetric_KNN_graph_similarity_cluster,
+  C_matrix <- Calculate_C_Matrix(matrix=symmetric_KNN_graph_cluster,
                                  densevector=centrality_scores_cluster,
                                  emphasizedistance=emphasizedistance,
                                  weightDist=weightDist,
@@ -405,7 +402,7 @@ MarkovHC = function(origin_matrix,
       midResults <- list(
         symmetric_KNN_graph_object = symmetric_KNN_graph_object,
         centrality_scores = centrality_scores,
-        symmetric_KNN_graph_similarity_cluster = symmetric_KNN_graph_similarity_cluster,
+        symmetric_KNN_graph_cluster = symmetric_KNN_graph_cluster,
         centrality_scores_cluster = centrality_scores_cluster,
         transitionMatrix = transitionMatrix
       )
