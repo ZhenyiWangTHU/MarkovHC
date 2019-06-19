@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1560692498085.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3336159307",
+    "id" : "C9F4BAB8",
+    "lastKnownWriteTime" : 1560776774,
+    "last_content_update" : 1560776774245,
+    "path" : "F:/Github/DataAnalysis/MarkovHC/debug.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "34,0",
+        "scrollLine" : "5",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

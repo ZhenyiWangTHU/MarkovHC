@@ -1,0 +1,389 @@
+setwd("/home/zywang/HuiCheng")
+library(monocle)
+library(scater)
+library(knitr)
+library(reshape2)
+library(ggplot2)
+library(stringr)
+library(rgl)
+library(pheatmap)
+library(Matrix)
+library(Seurat)
+library(plyr)
+library(stringr)
+library(pheatmap)
+#MEP_A2 <- read.table(file = "Data/combine.umi.gene.xls")
+#colnames(MEP_A2)[1] <- "genes"
+#CA123$genes <- rownames(CA123)
+#CA123 <- merge(CA123, MEP_A2, by="genes", all=T, sort=F)
+#rownames(CA123) <- CA123[,"genes"]
+#CA123 <- CA123[,-which(colnames(CA123)=="genes")]
+#CA123[is.na(CA123)] <- 0
+#colnames(CA123) <- c(label123[,1], rep("MEPA2", 96))
+#colnames_temp <- as.character(colnames(CA123))
+#for (i in 1:length(colnames_temp)) {
+#  colnames_temp[i] <- str_replace_all(colnames_temp[i], "-", "")
+#}
+#colnames(CA123) <- colnames_temp
+##1.prepare data---------------------------------------------------------------
+# for (i in 1:nrow(label123)) {
+#   colnames(CA123)[i] <- str_replace_all(label123[i,1], "-", "")
+# }
+# for (i in 1:ncol(CA123)) {
+#   colnames(CA123)[i] <- paste(colnames(CA123)[i], "_",as.character(i), sep = "")
+# }
+ensembleID2genename <- read.table(file = "Data/genecodename_genesymbol.txt", header = F)
+mito.genes <- grep(pattern = "^mt-", x = ensembleID2genename[,2], value = TRUE)
+mito.genes <- unique(mito.genes)
+mito.genes <- subset(ensembleID2genename, ensembleID2genename[,2]%in%mito.genes)
+mito.genes <- as.character(mito.genes[,1])
+mito.genes <- unique(mito.genes)
+for (i in 1:length(mito.genes)) {
+  mito.genes[i] <- strsplit(mito.genes[i], split = "\\.")[[1]][1]
+}
+genes <- rownames(CA123)
+for (j in 1:length(genes)) {
+  genes[j] <- str_split(genes[j], pattern = "\\.")[[1]][1]
+}
+rownames(CA123) <- genes
+##2.select cell types----------------------------------------------------------
+select_celltypes <- c("HSCAML","MPP1AML","MPP2A","MPP3AML","MPP4AML","MEPA","GMPA",
+                      "CMPA","MKPA","CLPA","LSKlowA","HSCC","MPP1C","MPP2C","MPP3C","MPP4C","MEPC","GMPC",
+                      "CMPC","MKPC","CLPC","LSKlowC")
+for (i in 1:nrow(label123)) {
+  label123[i,1] <- str_replace_all(label123[i,1], "-", "")
+}
+CA123_sub <- as.data.frame(t(subset(t(CA123), label123[,1]%in%select_celltypes)), stringsAsFactors=F)
+label123_sub <- subset(label123, label123[,1]%in%select_celltypes)
+lib123 <- as.data.frame(colnames(CA123_sub),stringsAsFactors=F)
+for (i in 1:nrow(lib123)) {
+  lib123[i,1] <- gsub(pattern ="YZN", replacement="CA",fixed=T, x=lib123[i,1])
+  temp <- strsplit(lib123[i,1], "_", fixed = T)
+  lib123[i,1] <- paste(temp[[1]][1],temp[[1]][2],sep = "-")
+}
+colnames(CA123_sub) <- label123_sub[,1]
+for (i in 1:ncol(CA123_sub)) {
+  colnames(CA123_sub)[i] <- paste(colnames(CA123_sub)[i], "_",as.character(i), sep = "")
+}
+##3.Bulid Seurat object--------------------------------------------------------
+AML <- CreateSeuratObject(raw.data = as.data.frame(CA123_sub), min.cells = 3, min.genes = 200, project = "AML")
+percent.mito <- Matrix::colSums(AML@raw.data[rownames(AML@raw.data)%in%mito.genes,])/Matrix::colSums(AML@raw.data)
+AML <- AddMetaData(object = AML, metadata = percent.mito, col.name = "percent.mito")
+# jpeg(filename = "violinplot.jpg", width = 2000, height = 800, quality = 100)
+VlnPlot(object = AML, features.plot = c("nGene", "nUMI", "percent.mito"), nCol = 3, size.x.use = 10, x.lab.rot = 90)
+# dev.off()
+# par(mfrow = c(1, 2))
+GenePlot(object = AML, gene1 = "nUMI", gene2 = "percent.mito",col.use = "black")
+GenePlot(object = AML, gene1 = "nUMI", gene2 = "nGene", col.use = "black")
+#很少量的细胞表达基因数超过了10000，猜测可能是多个细胞混了，根据经验，将基因数下限设为200，线粒体dna比例设为0.15
+AML <- FilterCells(object = AML, subset.names = c("nGene", "percent.mito"), low.thresholds = c(200, -Inf), high.thresholds = c(10000, 0.15))
+AML <- NormalizeData(object = AML, normalization.method = "LogNormalize", scale.factor = 10000)
+#挑出每一类细胞中varience/mean>1.2&total count大于5的基因
+# normalizedmatrix <- as.matrix(x = AML@data)
+# metadata_normalizeddata <- AML@meta.data
+# uniquecelltypes <- unique(metadata_normalizeddata[,"orig.ident"])
+# select_genes <- c()
+# for (i in 1:length(uniquecelltypes)) {
+#   expression <- subset(t(normalizedmatrix), metadata_normalizeddata[,"orig.ident"]%in%uniquecelltypes[i])
+#   expression <- t(expression)
+#   mean_express <- apply(expression, 1, mean) 
+#   var_express <- apply(expression, 1, var)    
+#   var_mean <- var_express/mean_express
+#   sum_express <- apply(expression, 1, sum)
+#   expression <- subset(expression, (var_mean>1.5)&(sum_express>5))
+#   select_genes <- union(select_genes, rownames(expression))
+# }
+#jpeg(filename = "Dispersion_average.jpg", width = 800, height = 800, quality = 100)
+AML <- FindVariableGenes(object = AML, mean.function = ExpMean, dispersion.function = LogVMR, do.plot = T,
+                         x.low.cutoff = 0.03, x.high.cutoff = 3, y.cutoff = 0.6)
+#dev.off()
+##5.extract scaled matrix and metadata-----------------------------------------
+length(x = AML@var.genes)
+vargenes <- AML@var.genes
+#select_var_genes <- union(vargenes, select_genes)
+AML <- ScaleData(object = AML, genes.use = vargenes, display.progress = T, do.par = TRUE, num.cores = 4)
+scaleddata <- AML@scale.data
+scaleddata <- as.matrix(scaleddata)
+metadata_normalizeddata <- AML@meta.data
+metadata_normalizeddata$group <- as.character(metadata_normalizeddata$orig.ident)
+for (i in 1:nrow(metadata_normalizeddata)){
+  if (metadata_normalizeddata[i,which(colnames(metadata_normalizeddata)=="orig.ident")]%in%c("HSCC","MPP1C","MPP2C","MPP3C","MPP4C","MEPC","GMPC",
+                                                                                        "CMPC","MKPC","CLPC","LSKlowC")){
+    metadata_normalizeddata[i,which(colnames(metadata_normalizeddata)=="group")] <- "Control"
+  }else{
+    metadata_normalizeddata[i,which(colnames(metadata_normalizeddata)=="group")] <- "AML"
+  }
+}
+metadata_normalizeddata$group <- as.factor(metadata_normalizeddata$group)
+##6.Run tsne on scaled data----------------------------------------------------
+#tsne1 <- tsneResult
+tsneResult <- Rtsne::Rtsne(t(scaleddata),perplexity = 20)
+tsneResult_layout <- tsneResult$Y
+ggplot(data=as.data.frame(tsneResult_layout), mapping =  aes(x=V1, y=V2))+geom_point(size=2, 
+                          aes(fill=as.factor(metadata_normalizeddata$orig.ident),
+                         shape=as.factor(metadata_normalizeddata$group)),color="#525252")+
+  xlim(min(tsneResult_layout[,1])-1,max(tsneResult_layout[,1])+1)+ylim(min(tsneResult_layout[,2])-1,
+                                                                       max(tsneResult_layout[,2])+1)+
+  theme(panel.grid.major =element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.title.x =element_text(size=15), 
+        axis.title.y=element_text(size=15),
+        legend.text = element_text(size=15))+
+  xlab("D1") + ylab("D2")+
+  scale_fill_manual(
+    values = c("HSCAML"='#1a1a1a',"MPP1AML"='#006837',"MPP2A"='#1a9850',"MPP3AML"='#66bd63',"MPP4AML"='#a6d96a',
+               "MEPA"='#d73027',"GMPA"='#f46d43',"CMPA"='#fdae61',
+               "MKPA"='#fee08b',"CLPA"='#74add1',"LSKlowA"='#a50026',
+               "HSCC"='#1a1a1a',"MPP1C"='#006837',"MPP2C"='#1a9850',"MPP3C"='#66bd63',"MPP4C"='#a6d96a',
+               "MEPC"='#d73027',"GMPC"='#f46d43',"CMPC"='#fdae61',
+               "MKPC"='#fee08b',"CLPC"='#74add1',"LSKlowC"='#a50026'),
+    breaks=c("HSCAML","HSCC","MPP1AML","MPP1C","MPP2A","MPP2C","MPP3AML","MPP3C","MPP4AML","MPP4C","CMPA","CMPC",
+              "CLPA","CLPC","MEPA","MEPC","GMPA","GMPC","MKPA","MKPC","LSKlowA","LSKlowC"))+
+  # scale_color_manual(
+  #   values = c("HSCAML"='#1a1a1a',"MPP1AML"='#006837',"MPP2A"='#1a9850',"MPP3AML"='#66bd63',"MPP4AML"='#a6d96a',
+  #              "MEPA"='#d73027',"GMPA"='#f46d43',"CMPA"='#fdae61',
+  #              "MKPA"='#fee08b',"CLPA"='#74add1',"LSKlowA"='#a50026',
+  #              "HSCC"='#1a1a1a',"MPP1C"='#006837',"MPP2C"='#1a9850',"MPP3C"='#66bd63',"MPP4C"='#a6d96a',
+  #              "MEPC"='#d73027',"GMPC"='#f46d43',"CMPC"='#fdae61',
+  #              "MKPC"='#fee08b',"CLPC"='#74add1',"LSKlowC"='#a50026'),
+  #   breaks=c("HSCAML","HSCC","MPP1AML","MPP1C","MPP2A","MPP2C","MPP3AML","MPP3C","MPP4AML","MPP4C","CMPA","CMPC",
+  #            "CLPA","CLPC","MEPA","MEPC","GMPA","GMPC","MKPA","MKPC","LSKlowA","LSKlowC"))+
+  scale_shape_manual(values = c("Control"=21, "AML"=24))
+
+# ggplot(data=as.data.frame(tsneResult_layout), mapping =  aes(x=V1, y=V2))+geom_point(size=2, 
+#                   aes(fill=as.factor(metadata_normalizeddata$orig.ident),
+#                   shape=as.factor(metadata_normalizeddata$group),
+#                                   color=as.factor(metadata_normalizeddata$orig.ident)))+
+#   xlim(min(tsneResult_layout[,1])-1,max(tsneResult_layout[,1])+1)+ylim(min(tsneResult_layout[,2])-1,
+#                                                                        max(tsneResult_layout[,2])+1)+
+#   theme(panel.grid.major =element_blank(), 
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         axis.title.x =element_text(size=15), 
+#         axis.title.y=element_text(size=15),
+#         legend.text = element_text(size=15))+
+#   xlab("D1") + ylab("D2")+
+#   scale_fill_manual(
+#     values = c("HSCAML"='#1a1a1a',"MPP1AML"='#006837',"MPP2A"='#1a9850',"MPP3AML"='#66bd63',"MPP4AML"='#a6d96a',
+#                "MEPA"='#d73027',"GMPA"='#f46d43',"CMPA"='#fdae61',
+#                "MKPA"='#fee08b',"CLPA"='#74add1',"LSKlowA"='#a50026',
+#                "HSCC"='#1a1a1a',"MPP1C"='#006837',"MPP2C"='#1a9850',"MPP3C"='#66bd63',"MPP4C"='#a6d96a',
+#                "MEPC"='#d73027',"GMPC"='#f46d43',"CMPC"='#fdae61',
+#                "MKPC"='#fee08b',"CLPC"='#74add1',"LSKlowC"='#a50026'),
+#     breaks=c("HSCAML","HSCC","MPP1AML","MPP1C","MPP2A","MPP2C","MPP3AML","MPP3C","MPP4AML","MPP4C","CMPA","CMPC",
+#              "CLPA","CLPC","MEPA","MEPC","GMPA","GMPC","MKPA","MKPC","LSKlowA","LSKlowC"))+
+#   scale_color_manual(
+#     values = c("HSCAML"='#525252',"MPP1AML"='#525252',"MPP2A"='#525252',"MPP3AML"='#525252',"MPP4AML"='#525252',
+#                "MEPA"='#525252',"GMPA"='#525252',"CMPA"='#525252',
+#                "MKPA"='#525252',"CLPA"='#525252',"LSKlowA"='#525252',
+#                "HSCC"='#525252',"MPP1C"='#525252',"MPP2C"='#525252',"MPP3C"='#525252',"MPP4C"='#525252',
+#                "MEPC"='#525252',"GMPC"='#525252',"CMPC"='#525252',
+#                "MKPC"='#525252',"CLPC"='#525252',"LSKlowC"='#525252'),
+#     breaks=c("HSCAML","HSCC","MPP1AML","MPP1C","MPP2A","MPP2C","MPP3AML","MPP3C","MPP4AML","MPP4C","CMPA","CMPC",
+#              "CLPA","CLPC","MEPA","MEPC","GMPA","GMPC","MKPA","MKPC","LSKlowA","LSKlowC"))+
+#   scale_shape_manual(values = c("Control"=21, "AML"=24))
+
+
+##7.import to monocle
+monocleobject <- importCDS(otherCDS = AML, import_all = T)
+monocleobject <- estimateSizeFactors(monocleobject)
+monocleobject <- estimateDispersions(monocleobject)
+monocleobject <- detectGenes(monocleobject, min_expr = 0.1)
+pdata <- pData(monocleobject)
+fdata <- fData(monocleobject)
+expressed_genes <- row.names(subset(fData(monocleobject),num_cells_expressed >= 10))
+#valid_cells <- row.names(subset(pData(monocleobject),10000>num_genes_expressed))
+#psudotime
+diff_test_res <- differentialGeneTest(monocleobject[expressed_genes,], fullModelFormulaStr = "~orig.ident",cores=20)
+#qval < 1e-51(类比较清晰)
+ordering_genes <- row.names (subset(diff_test_res, qval < 1e-51))
+length(ordering_genes)
+monocleobject <- setOrderingFilter(monocleobject, ordering_genes)
+monocleobject <- reduceDimension(monocleobject, max_components = 2, method = 'DDRTree')
+monocleobject <- orderCells(monocleobject)
+#the layout of pseudotime
+layout<- monocleobject@reducedDimS
+layout <- as.data.frame(t(layout))
+#write.csv(layout, file = "pseudotimeLayout.csv")
+#png(filename = "trajectorytotal.png", width = 1000, height = 1000)
+plot_cell_trajectory(monocleobject, color_by = "orig.ident")
+#dev.off()
+phenoData_new <- monocleobject@phenoData
+ggplot(data=as.data.frame(layout), mapping =  aes(x=V1, y=V2)) +
+  geom_point(size=1, shape=21, aes(fill=as.factor(phenoData_new@data$orig.ident)), color="#525252")+
+  xlim(min(layout$V1)-1,max(layout$V1)+1)+ylim(min(layout$V2)-1,max(layout$V2)+1)+
+  theme(panel.grid.major =element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(),axis.line = element_line(colour = "black"),
+        axis.title.x =element_text(size=15), axis.title.y=element_text(size=15),legend.text = element_text(size=15))+
+  xlab("D1") + ylab("D2")+
+  # scale_colour_manual(values = c("HSCC"='#1a1a1a',"MPP1C"='#006837',"MPP2C"='#1a9850',"MPP3C"='#66bd63',"MPP4C"='#a6d96a',
+  #                                "MEPC"='#d73027',"GMPC"='#f46d43',"CMPC"='#fdae61',
+  #                                "MKPC"='#fee08b',"CLPC"='#74add1',"LSKlowC"='#a50026')
+  #                     ,breaks=c("HSCC","MPP1C","MPP2C","MPP3C","MPP4C","CMPC","CLPC","MEPC","GMPC","MKPC","LSKlowC"))+
+  scale_fill_manual(
+    values = c("HSCAML"='#1a1a1a',"MPP1AML"='#006837',"MPP2A"='#1a9850',"MPP3AML"='#66bd63',"MPP4AML"='#a6d96a',
+               "MEPA"='#d73027',"GMPA"='#f46d43',"CMPA"='#fdae61',
+               "MKPA"='#fee08b',"CLPA"='#74add1',"LSKlowA"='#a50026')
+    ,breaks=c("HSCAML","MPP1AML","MPP2A","MPP3AML","MPP4AML","CMPA","CLPA","MEPA","GMPA","MKPA","LSKlowA"))
+
+#heatmap
+phenoData_new <- monocleobject@phenoData
+expression_matrix <- as.matrix(monocleobject@assayData$exprs)
+ordergenes_expression_matrix <- subset(expression_matrix, rownames(expression_matrix)%in%ordering_genes)
+annotation_col_C = data.frame(CellType=factor(phenoData_new@data$orig.ident))
+rownames(annotation_col_C) = colnames(expression_matrix)
+ann_colors_C = list(
+  CellType = c(HSCAML='#1a1a1a',MPP1AML='#006837',MPP2A='#1a9850',MPP3AML='#66bd63',MPP4AML='#a6d96a',
+               MEPA='#d73027',GMPA='#f46d43',CMPA='#fdae61',
+               MKPA='#fee08b',CLPA='#74add1',LSKlowA='#a50026',
+               HSCC='#1a1a1a',MPP1C='#006837',MPP2C='#1a9850',MPP3C='#66bd63',MPP4C='#a6d96a',
+               MEPC='#d73027',GMPC='#f46d43',CMPC='#fdae61',
+               MKPC='#fee08b',CLPC='#74add1',LSKlowC='#a50026'))
+
+combine_celltype <- as.character(phenoData_new@data$orig.ident)
+unique_combine_celltype <- unique(combine_celltype)
+ordergenes_expression_matrix <- t(ordergenes_expression_matrix)
+ordered_genes_expression_matrix <- subset(ordergenes_expression_matrix, combine_celltype%in%unique_combine_celltype[1])
+for (i in 2:length(unique_combine_celltype)) {
+  subcluster <- subset(ordergenes_expression_matrix, combine_celltype%in%unique_combine_celltype[i])
+  ordered_genes_expression_matrix <- rbind(ordered_genes_expression_matrix, subcluster)
+}
+ordered_genes_expression_matrix <- t(ordered_genes_expression_matrix)
+log_ordered_genes_expression_matrix <- log(ordered_genes_expression_matrix+1)
+log_ordered_genes_expression_matrix[log_ordered_genes_expression_matrix>6] <- 6
+p1 <- pheatmap(as.matrix(log_ordered_genes_expression_matrix), cluster_rows = T, cluster_cols =F, 
+               scale = "row" ,
+               #legend的显示断点位置
+               # legend_breaks= ceiling(seq(min(as.matrix(log(ordered_genes_expression_matrix+1))),max(as.matrix(log(ordered_genes_expression_matrix+1))),4)),
+               # color = colorRampPalette(colors = c("#ffffff","#fdb863","#542788"))(30),
+               # breaks= seq(min(as.matrix(log(ordered_genes_expression_matrix+1))),max(as.matrix(log(ordered_genes_expression_matrix+1))),by=(max(as.matrix(log(ordered_genes_expression_matrix+1)))-
+               #                                                                                       min(as.matrix(log(ordered_genes_expression_matrix+1))))/30),
+               legend_breaks= ceiling(seq(min(log_ordered_genes_expression_matrix),max(log_ordered_genes_expression_matrix),2)),
+               color = colorRampPalette(colors = c("#ffffff","#fdb863","#542788"))(30),
+               breaks= seq(min(log_ordered_genes_expression_matrix),
+                           max(log_ordered_genes_expression_matrix),
+                           by=(max(log_ordered_genes_expression_matrix)-min(log_ordered_genes_expression_matrix))/30),
+               show_colnames = F, show_rownames = F,annotation_col  = annotation_col_C, annotation_colors = ann_colors_C,
+               fontsize =10)
+
+
+
+
+
+#perform cluster
+#AML <- RunPCA(object = AML, pcs.compute=50, pc.genes = select_var_genes, do.print = TRUE,genes.print = 5)
+#PCElbowPlot(object = AML,num.pc = 50)
+#reload data and run from this line
+#AML <- FindClusters(object = AML, reduction.type = "pca", dims.use = 1:20, 
+#                     resolution = 1.2, print.output = F, save.SNN = TRUE)
+#clusteriden <- as.character(AML@ident)
+#for (i in 1:length(clusteriden)) {
+#  clusteriden[i] <- paste("cluster",clusteriden[i], sep = "")
+#}
+#scaleddata <- t(scaleddata)
+#uniquecluster <- unique(clusteriden)
+#orderscaledata <- subset(scaleddata, clusteriden%in%uniquecluster[1])
+#for (i in 2:length(uniquecluster)) {
+#  subcluster <- subset(scaleddata, clusteriden%in%uniquecluster[i])
+#  orderscaledata <- rbind(orderscaledata, subcluster)
+#}
+#orderscaledata <- t(orderscaledata)
+
+#p <- pheatmap(as.matrix(orderscaledata), cluster_rows = T, cluster_cols =F, 
+# scale = "row" ,
+# #legend的显示断点位置
+# legend_breaks= ceiling(seq(min(orderscaledata),max(orderscaledata),4)),
+# color = colorRampPalette(colors = c("#ffffff","#fd8d3c","#fc4e2a","#8856a7"))(50),
+# breaks= seq(min(orderscaledata),max(orderscaledata),by=(max(orderscaledata)-min(orderscaledata))/50),
+# show_colnames = F, show_rownames = F,
+# #annotation_col  = annotation_col, annotation_colors = ann_colors,
+# fontsize =10, main= "Informative genes heatmap of all cells", clustering_method = "ward.D2")
+
+
+#heatmap
+#labels作为元素
+condition = as.character(metadata_normalizeddata$orig.ident)
+C_group <- c("HSCC","MPP1C","MPP2C","MPP3C","MPP4C","MEPC","GMPC","CMPC", 
+             "MKPC","SPHSCC","LEPRC","ECC","SPECC","SPMSCC","CLPC","LSKlowC")
+A_group <- c("HSCAML","MPP1AML", "MPP3AML", "MPP4AML", "CMPA", "GMPA", 
+             "MEPA", "MKPA","SPHSCA", "MPP2A", "LEPRA","ECA","SPMSCA",
+             "SPECA","CLPA", "LSKlowA","MEPA2")
+#AML单独拿出来
+for (i in 1:length(condition)) {
+  if(condition[i]%in%C_group){condition[i] <- "C"}else if(condition[i]%in%A_group){condition[i] <- "A"}
+}
+Celltype_temp <- as.character(metadata_normalizeddata$orig.ident)
+annotation_col = data.frame(CellType=factor(Celltype_temp), Condition=factor(condition))
+#annotation的行名和数据的行名对映
+rownames(annotation_col) = colnames(normalizeddata)
+#设置annotation的分组颜色
+ann_colors = list(
+  CellType = c(  HSCC="#f7fcfd",MPP1C="#e5f5f9",MPP2C="#ccece6",MPP3C="#99d8c9",MPP4C="#66c2a4",
+                 MEPC="#8c96c6",GMPC="#8c6bb1",CMPC="#88419d",MKPC="#810f7c",SPHSCC="#4d004b",
+                 LEPRC="#7bccc4",ECC="#4eb3d3",SPECC="#2b8cbe",SPMSCC="#0868ac",CLPC="#084081",
+                 LSKlowC="#fc8d59",
+                 HSCAML="#ef6548",MPP1AML="#d7301f",MPP3AML="#b30000",MPP4AML="#7f0000",
+                 CMPA="#df65b0",GMPA="#e7298a",MEPA="#ce1256",MKPA="#980043",SPHSCA="#67001f",
+                 MPP2A="#74a9cf",LEPRA="#3690c0",ECA="#0570b0",SPMSCA="#045a8d",SPECA="#023858",
+                 CLPA="#969696",LSKlowA="#525252",AML="#000000",MEPA2="#ffffff") ,
+  Condition = c(AML="black",A="red",C="lightgray")
+) 
+
+p <- pheatmap(as.matrix(normalizeddata), cluster_rows = T, cluster_cols =F, 
+              scale = "row" ,
+              #legend的显示断点位置
+              legend_breaks= ceiling(seq(min(normalizeddata),max(normalizeddata),4)),
+              color = colorRampPalette(colors = c("turquoise1","black","gold"))(50),
+              breaks= seq(min(normalizeddata),max(normalizeddata),by=(max(normalizeddata)-min(normalizeddata))/50),
+              show_colnames = F, show_rownames = F,annotation_col  = annotation_col, annotation_colors = ann_colors,
+              fontsize =10, main= "Informative genes heatmap of all cells", clustering_method = "average")
+#Group A
+normalizeddata_Agroup <- subset(t(normalizeddata), Celltype_temp%in%c(A_group,"AML"))
+normalizeddata_Agroup <- t(normalizeddata_Agroup)
+Celltype_temp_A <- subset(Celltype_temp, Celltype_temp%in%c(A_group,"AML"))
+annotation_col_A = data.frame(CellType=factor(Celltype_temp_A))
+rownames(annotation_col_A) = colnames(normalizeddata_Agroup)
+ann_colors_A = list(
+  CellType = c(  HSCAML="#ef6548",MPP1AML="#d7301f",MPP3AML="#b30000",MPP4AML="#7f0000",
+                 CMPA="#df65b0",GMPA="#e7298a",MEPA="#ce1256",MKPA="#980043",SPHSCA="#67001f",
+                 MPP2A="#74a9cf",LEPRA="#3690c0",ECA="#0570b0",SPMSCA="#045a8d",SPECA="#023858",
+                 CLPA="#969696",LSKlowA="#525252",AML="#000000",MEPA2="#ffffff"))
+p2 <- pheatmap(as.matrix(normalizeddata_Agroup), cluster_rows = T, cluster_cols =T, 
+               scale = "row" ,
+               #legend的显示断点位置
+               legend_breaks= ceiling(seq(min(normalizeddata_Agroup),max(normalizeddata_Agroup),4)),
+               color = colorRampPalette(colors = c("#ffffff","#fd8d3c","#fc4e2a","#8856a7"))(50),
+               breaks= seq(min(normalizeddata_Agroup),max(normalizeddata_Agroup),by=(max(normalizeddata_Agroup)-min(normalizeddata_Agroup))/50),
+               show_colnames = F, show_rownames = F,annotation_col  = annotation_col_A, annotation_colors = ann_colors_A,
+               fontsize =10, main= "Informative genes heatmap of A group cells")
+#Group C
+normalizeddata_Cgroup <- subset(t(normalizeddata), Celltype_temp%in%C_group)
+normalizeddata_Cgroup <- t(normalizeddata_Cgroup)
+Celltype_temp_C <- subset(Celltype_temp, Celltype_temp%in%C_group)
+annotation_col_C = data.frame(CellType=factor(Celltype_temp_C))
+rownames(annotation_col_C) = colnames(normalizeddata_Cgroup)
+ann_colors_C = list(
+  CellType = c(  HSCC="#f7fcfd",MPP1C="#e5f5f9",MPP2C="#ccece6",MPP3C="#99d8c9",MPP4C="#66c2a4",
+                 MEPC="#8c96c6",GMPC="#8c6bb1",CMPC="#88419d",MKPC="#810f7c",SPHSCC="#4d004b",
+                 LEPRC="#7bccc4",ECC="#4eb3d3",SPECC="#2b8cbe",SPMSCC="#0868ac",CLPC="#084081",
+                 LSKlowC="#fc8d59"))
+p3 <- pheatmap(as.matrix(normalizeddata_Cgroup), cluster_rows = T, cluster_cols =T, 
+               scale = "row" ,
+               #legend的显示断点位置
+               legend_breaks= ceiling(seq(min(normalizeddata_Cgroup),max(normalizeddata_Cgroup),4)),
+               color = colorRampPalette(colors = c("turquoise1","black","gold"))(50),
+               breaks= seq(min(normalizeddata_Cgroup),max(normalizeddata_Cgroup),by=(max(normalizeddata_Cgroup)-min(normalizeddata_Cgroup))/50),
+               show_colnames = F, show_rownames = F,annotation_col  = annotation_col_C, annotation_colors = ann_colors_C,
+               fontsize =10, main= "Informative genes heatmap of C group cells")
+#Output figures
+png(filename = "Results/heatmap1.png", width = 2500, height = 1000)
+p
+dev.off()
+png(filename = "Results/heatmap2.png", width = 2500, height = 1000)
+p2
+dev.off()
+png(filename = "Results/heatmap3.png", width = 2500, height = 1000)
+p3
+dev.off()

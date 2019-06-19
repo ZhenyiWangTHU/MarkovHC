@@ -1,0 +1,43 @@
+plot(example1)
+MarkovHC_example1 <- MarkovHC(origin_matrix=example1,
+                              minrt=50,
+                              transformtype="none",
+                              KNN=20,
+                              basecluster="clique",
+                              dobasecluster=FALSE,
+                              baseclusternum=NULL,
+                              emphasizedistance=1,
+                              weightDist=2,
+                              weightDens=0.5,
+                              cutpoint=0.05,
+                              showprocess=FALSE,
+                              bn=2,
+                              stop_rate=1)
+library(MarkovHC)
+data("example1")
+example1 <- t(example1)
+example1_dm <- dist(example1,method = "minkowski",p=2)
+nn <- sNN(example1_dm, k = 20)
+plot(nn, example1)
+class(nn$shared)
+dim(nn$shared)
+nn.shared <- nn$shared
+View(nn.shared)
+dim(nn$dist)
+nn.dist <- nn$dist
+View(nn.dist)
+
+origin_matrix=example1
+minrt=50
+transformtype="none"
+KNN=20
+basecluster="clique"
+dobasecluster=TRUE
+baseclusternum=NULL
+emphasizedistance=1
+weightDist=2
+weightDens=0.5
+cutpoint=0.05
+showprocess=FALSE
+bn=2
+stop_rate=1
