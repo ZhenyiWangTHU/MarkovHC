@@ -22,9 +22,9 @@ judge_RS<-function(P=NULL){
   #the eigen value is close to 1 enough
   eigen_value_one<-which(abs(RSmatrix$values-1)<1e-10)
   if(length(eigen_value_one)==1){
-    return(abs(Re(RSmatrix$vectors[,eigen_value_one])))
+    return(abs(RSmatrix$vectors[,eigen_value_one]))
   }else{
-    RS<-apply(abs(Re(RSmatrix$vectors[,eigen_value_one])),1,sum)
+    RS<-apply(abs(RSmatrix$vectors[,eigen_value_one]),1,sum)
   }
   return(RS)
 }

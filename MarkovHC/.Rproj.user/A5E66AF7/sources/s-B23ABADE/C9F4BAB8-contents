@@ -1,10 +1,11 @@
-plot(example1)
-MarkovHC_example1 <- MarkovHC(origin_matrix=example1,
+library(MarkovHC)
+data("example1")
+MarkovHC_example1 <- MarkovHC(origin_matrix=t(example1),
                               minrt=50,
                               transformtype="none",
-                              KNN=20,
-                              basecluster="clique",
-                              dobasecluster=FALSE,
+                              KNN=10,
+                              basecluster="louvain",
+                              dobasecluster=TRUE,
                               baseclusternum=NULL,
                               emphasizedistance=1,
                               weightDist=2,
@@ -13,8 +14,7 @@ MarkovHC_example1 <- MarkovHC(origin_matrix=example1,
                               showprocess=FALSE,
                               bn=2,
                               stop_rate=1)
-library(MarkovHC)
-data("example1")
+
 example1 <- t(example1)
 example1_dm <- dist(example1,method = "minkowski",p=2)
 nn <- sNN(example1_dm, k = 20)
@@ -27,11 +27,11 @@ dim(nn$dist)
 nn.dist <- nn$dist
 View(nn.dist)
 
-origin_matrix=example1
+origin_matrix=t(example1)
 minrt=50
 transformtype="none"
-KNN=20
-basecluster="clique"
+KNN=10
+basecluster="louvain"
 dobasecluster=TRUE
 baseclusternum=NULL
 emphasizedistance=1
@@ -41,3 +41,8 @@ cutpoint=0.05
 showprocess=FALSE
 bn=2
 stop_rate=1
+
+
+
+
+

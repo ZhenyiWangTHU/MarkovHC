@@ -54,19 +54,19 @@
 #' @export
 
 MarkovHC = function(origin_matrix,
-              minrt=50,
-              transformtype="none",
-              KNN=20,
-              basecluster="louvain",
-              dobasecluster=FALSE,
-              baseclusternum=NULL,
-              emphasizedistance=1,
-              weightDist=2,
-              weightDens=0.5,
-              cutpoint=0.05,
-              showprocess=FALSE,
-              bn=2,
-              stop_rate=1){
+                    minrt=50,
+                    transformtype="none",
+                    KNN=20,
+                    basecluster="louvain",
+                    dobasecluster=FALSE,
+                    baseclusternum=NULL,
+                    emphasizedistance=1,
+                    weightDist=2,
+                    weightDens=0.5,
+                    cutpoint=0.05,
+                    showprocess=FALSE,
+                    bn=2,
+                    stop_rate=1){
   ##step01.check the input parameters------------------------------------------
   #origin_matrix
   if((!is.matrix(origin_matrix))&(!is.data.frame(origin_matrix))){
@@ -178,7 +178,8 @@ MarkovHC = function(origin_matrix,
   #the elements on double positive index should be divided by 2, do not need to do
   #that on one or zero positive index.
   symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)] <- symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)]/2
-
+  rm(list = c('KNN_graph', 'KNN_graph_T', 'KNN_graph_index', 'KNN_graph_T_index'))
+  gc(verbose=FALSE)
   ##below method is deprecated because of slow calculateing speed
   # KNN_graph <- as.matrix(dm)
   # bulid_KNN_row <- function(x,n=KNN){
@@ -205,11 +206,21 @@ MarkovHC = function(origin_matrix,
   # diag(symmetric_KNN_graph) <- 0
 
   ##other options are calculating the degree or PageRank of each node in the graph, we take the degree as the density of the node here.
-  #use 'eigen_centrality' in igraph to find Eigenvector Centrality Scores of Network Positions.
-  symmetric_KNN_graph_sparse <- as(symmetric_KNN_graph, "dgCMatrix")%>%summary()%>%as.data.frame()
-  symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = FALSE)
-  graph_attr(symmetric_KNN_graph_object,'weight') <- symmetric_KNN_graph_sparse[,3]
-  centrality_scores <- eigen_centrality(symmetric_KNN_graph_object, weights = symmetric_KNN_graph_sparse[,3])$vector
+  #use 'degree' in igraph to calculate the degree of vertexes in the network.
+
+  #symmetric_KNN_graph_sparse <- as(symmetric_KNN_graph, "dgCMatrix") %>% Matrix::summary() %>% as.data.frame()
+  #symmetric_KNN_graph_object <- make_graph(t(symmetric_KNN_graph_sparse[,1:2]), directed = FALSE)
+  #graph_attr(symmetric_KNN_graph_object,'weight') <- symmetric_KNN_graph_sparse[,3]
+  #use graph_from_adjacency_matrix for convenience
+  symmetric_KNN_graph_object <- graph_from_adjacency_matrix(adjmatrix = symmetric_KNN_graph,
+                                                            mode = 'undirected',
+                                                            weighted = TRUE,
+                                                            diag = TRUE)
+
+  #centrality_scores <- eigen_centrality(symmetric_KNN_graph_object, weights = symmetric_KNN_graph_sparse[,3])$vector
+  centrality_scores <- degree(symmetric_KNN_graph_object, v = V(symmetric_KNN_graph_object),
+                              mode = "total",
+                              loops = TRUE, normalized = FALSE)
 
   ##step03.do preclustering----------------------------------------------------
   #hierarchical clustering or k-means clutering or finding Maximum clique.
@@ -242,8 +253,8 @@ MarkovHC = function(origin_matrix,
           baseclusternum <- ceiling(nrow(transformed_matrix)/10)
         }
         cluster_louvain_object <- cluster_louvain(graph = symmetric_KNN_graph_object,
-                                                  weights = graph_attr(symmetric_KNN_graph_object,'weight'))
-        for (i in 1:dim(cluster_louvain_object$memberships)) {
+                                                  weights = E(symmetric_KNN_graph_object)$weight )
+        for (i in 1:nrow(cluster_louvain_object$memberships)) {
           if(length(unique(cluster_louvain_object$memberships[i,]))<=baseclusternum){
             hresult_cut <- cluster_louvain_object$memberships[i,]
             break
@@ -301,52 +312,75 @@ MarkovHC = function(origin_matrix,
                                  emphasizedistance=emphasizedistance,
                                  weightDist=weightDist,
                                  weightDens=weightDens)
-  C_matrix_graph_sparse <- as(as.matrix(C_matrix), "dgCMatrix")%>%summary()%>%as.data.frame()
-  C_matrix_graph_object <- make_graph(t(C_matrix_graph_sparse[,1:2]), directed = TRUE)
-  graph_attr(C_matrix_graph_object,'weight') <- C_matrix_graph_sparse[,3]
-
+  C_matrix <- C_matrix + 0.1
+  C_matrix[which(C_matrix==Inf)] <- 0
+  # C_matrix_graph_sparse <- as(as.matrix(C_matrix), "dgCMatrix")%>%Matrix::summary()%>%as.data.frame()
+  # C_matrix_graph_object <- make_graph(t(C_matrix_graph_sparse[,1:2]), directed = TRUE)
+  # graph_attr(C_matrix_graph_object,'weight') <- C_matrix_graph_sparse[,3]
+  C_matrix_graph_object <- graph_from_adjacency_matrix(adjmatrix = as.matrix(C_matrix),
+                                                       mode = 'directed',
+                                                       weighted = TRUE,
+                                                       diag = TRUE)
   ##step05. Build the hierarchical structure-----------------------------------
   P_updated <- transitionMatrix
   MarkovHC_result <- list()
   #Store the result of base clustering
   attractors <- list()
   basins <- list()
+  graphvertex_attractors <- list()
+  graphvertex_basins <- list()
   attractorPoints <- list()
   basinPoints <- list()
   for (i in 1:length(unique_clusters)) {
     attractors <- c(attractors, list(i))
     basins <- c(basins, list(i))
+    graphvertex_attractors <- c(graphvertex_attractors, list(i))
+    graphvertex_basins <- c(graphvertex_basins, list(i))
     clusterPoints <- which(hresult_cut==i)
     attractorPoints <- c(attractorPoints, list(clusterPoints))
-    basinPoints <- c(basinPoints, list(basinPoints))
+    basinPoints <- c(basinPoints, list(clusterPoints))
   }
   basinNum <- length(attractors)
   level_result <- list(basins=basins,
                        attractors=attractors,
+                       graphvertex_attractors=graphvertex_attractors,
+                       graphvertex_basins=graphvertex_basins,
                        basinPoints=basinPoints,
                        attractorPoints=attractorPoints,
                        basinNum=basinNum)
-  MarkovHC_result <- c(MarkovHC_result, level_result)
+  MarkovHC_result <- append(MarkovHC_result, list(level_result))
   levels_indice <- 1
+  print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))
   while (TRUE) {
+    levels_indice <- levels_indice + 1
+    print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))
     ##step05.1 find basins and attractors
     RS_vector <- judge_RS(P=P_updated)
 
     ##step05.2 constructe the list to store the result of this level
     attractors <- list()
     basins <- list()
+    graphvertex_attractors <- list()
+    graphvertex_basins <- list()
     attractorPoints <- list()
     basinPoints <- list()
 
     ##step05.3 partition the state space
     processed_attractors <- integer(length = length(RS_vector))
+    processed_attractors[which(RS_vector==0)] <- 1
+    attractor_indice <- 1
     while(TRUE){
      if(all(processed_attractors==1)){break}
+     print(paste('Find attractors in the basin ',as.character(attractor_indice),'.', sep = ''))
      attractor_temp <- which(processed_attractors==0)[1]
      processed_attractors[attractor_temp] <- 1
-     P_updated_graph_sparse <- as(as.matrix(P_updated), "dgCMatrix")%>%summary()%>%as.data.frame()
-     P_updated_graph_object <- make_graph(t(P_updated_graph_sparse[,1:2]), directed = TRUE)
-     graph_attr(P_updated_graph_object,'weight') <- P_updated_graph_sparse[,3]
+     # P_updated_graph_sparse <- as(as.matrix(P_updated), "dgCMatrix")%>%Matrix::summary()%>%as.data.frame()
+     # P_updated_graph_object <- make_graph(t(P_updated_graph_sparse[,1:2]), directed = TRUE)
+     # graph_attr(P_updated_graph_object,'weight') <- P_updated_graph_sparse[,3]
+     P_updated_graph_object <- graph_from_adjacency_matrix(adjmatrix = as.matrix(P_updated),
+                                                           mode = 'directed',
+                                                           weighted = TRUE,
+                                                           diag = TRUE)
      attractor_temp_access <- all_simple_paths(graph = P_updated_graph_object, from = attractor_temp,
                                                mode = 'out')%>%unlist()%>%unique()
      processed_attractors[attractor_temp_access] <- 1
@@ -357,45 +391,57 @@ MarkovHC = function(origin_matrix,
                                          mode = 'in')%>%unlist()%>%unique()
          basins_temp_merged <- c(basins_temp_merged, basins_temp)
        }
-     basins <- c(basins, list(unique(basins_temp_merged)))
+     basins_temp_merged <- c(basins_temp_merged, unique(c(attractor_temp_access, attractor_temp)))%>%unique()
+     basins <- c(basins, list(basins_temp_merged))
+     attractor_indice <- attractor_indice+1
     }
 
-    ##step05.4 assign the points to basins and attractors
+    ##step05.4 assign the points and graph vertexes to basins and attractors
     basinNum <- length(basins)
+    basin_indice <- 1
     for (i in 1:basinNum){
+        print(paste('Partition the basin ',as.character(basin_indice),'.', sep = ''))
         #assign attractor points
         attractorPoints_temp <- level_result$attractorPoints[attractors[[i]]]%>%unlist()%>%unique()
         attractorPoints <- c(attractorPoints, list(attractorPoints_temp))
         #assign basin points
         basinPoints_temp <- level_result$basinPoints[basins[[i]]]%>%unlist()%>%unique()
         basinPoints <- c(basinPoints, list(basinPoints_temp))
+        #assign graphvertex_attractors
+        graphvertex_attractors_temp <- level_result$graphvertex_attractors[attractors[[i]]]%>%unlist()%>%unique()
+        graphvertex_attractors <- c(graphvertex_attractors, list(graphvertex_attractors_temp))
+        #assign graphvertex_basins
+        graphvertex_basins_temp <- level_result$graphvertex_basins[basins[[i]]]%>%unlist()%>%unique()
+        graphvertex_basins <- c(graphvertex_basins, list(graphvertex_basins_temp))
+        basin_indice <- basin_indice+1
     }
+
     ##step05.5 update the pseudo energy matrix
     C_matrix_updated <- matrix(data = 0, nrow = basinNum, ncol = basinNum)
     for (i in 1:basinNum) {
       for (j in 1:basinNum) {
         if(i==j){next}
         C_matrix_updated[i,j] <- distances(graph = C_matrix_graph_object,
-                                           v = attractors[[i]],
-                                           to = basins[[j]],
+                                           v = level_result$graphvertex_attractors[attractors[[i]]]%>%unlist()%>%unique(),
+                                           to = level_result$graphvertex_basins[basins[[j]]]%>%unlist()%>%unique(),
                                            mode = 'out',
-                                           weights = graph_attr(C_matrix_graph_object,'weight'),
+                                           weights = E(C_matrix_graph_object)$weight,
                                            algorithm = "dijkstra")%>%min()
       }
     }
 
-    ##step05.6 update the transition probability matrix
-    P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
-
-    ##step05.7 constructe the list to store the result of MarkovHC algorithm
+    ##step05.6 constructe the list to store the result of MarkovHC algorithm
     level_result <- list(basins=basins,
                          attractors=attractors,
+                         graphvertex_attractors=graphvertex_attractors,
+                         graphvertex_basins=graphvertex_basins,
                          basinPoints=basinPoints,
                          attractorPoints=attractorPoints,
                          basinNum=basinNum)
-    MarkovHC_result <- c(MarkovHC_result, level_result)
-    levels_indice <- levels_indice + 1
-    if(basinNum==1){
+    MarkovHC_result <- append(MarkovHC_result, list(level_result))
+    C_matrix_updated_indice <- C_matrix_updated
+    diag(C_matrix_updated_indice) <- Inf
+    if((basinNum==1)|(all(is.infinite(C_matrix_updated_indice)))){
       ##step06. Output the results---------------------------------------------
       #The input parameters
       inputParameters <- list(
@@ -427,9 +473,14 @@ MarkovHC = function(origin_matrix,
         inputParameters = inputParameters,
         midResults = midResults
       )
+      names(MarkovHC_object$hierarchicalStructure) <- paste(rep('level', length(MarkovHC_result)),
+                                                            1:length(MarkovHC_result),
+                                                            sep = '')
       stopCluster(cl)
       return(MarkovHC_object)
     }
+    ##step07.1 update the transition probability matrix
+    P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
   }
 }
 
