@@ -1,9 +1,10 @@
 library(MarkovHC)
+library(ggplot2)
 data("example1")
 MarkovHC_example1 <- MarkovHC(origin_matrix=t(example1),
                               minrt=50,
                               transformtype="none",
-                              KNN=10,
+                              KNN=20,
                               basecluster="louvain",
                               dobasecluster=TRUE,
                               baseclusternum=NULL,
@@ -14,6 +15,14 @@ MarkovHC_example1 <- MarkovHC(origin_matrix=t(example1),
                               showprocess=FALSE,
                               bn=2,
                               stop_rate=1)
+label <- integer(nrow(example1))
+for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level21$basinPoints)) {
+  label[MarkovHC_example1$hierarchicalStructure$level21$basinPoints[[i]]] <- i
+}
+dataframe.example1 <- as.data.frame(example1)
+dataframe.example1$label <- factor(label)
+ggplot(data = as.data.frame(dataframe.example1), aes(x=x,y=y,color=label))+geom_point(size=3)
+
 
 example1 <- t(example1)
 example1_dm <- dist(example1,method = "minkowski",p=2)

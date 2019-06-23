@@ -290,7 +290,8 @@ MarkovHC = function(origin_matrix,
         symmetric_KNN_graph_cluster[clusterindex, clusterindex2] <- max(temp_cluster)
       }
     }
-    diag(symmetric_KNN_graph_cluster) <- min(symmetric_KNN_graph_cluster)
+    #diag(symmetric_KNN_graph_cluster) <- min(symmetric_KNN_graph_cluster)
+    diag(symmetric_KNN_graph_cluster) <- KNN
     #calculate the centrality_scores of clusters
     centrality_scores_cluster <- integer(length = length(unique_clusters))
     for (score_index in 1:length(unique_clusters)) {
@@ -462,10 +463,12 @@ MarkovHC = function(origin_matrix,
       #The results among the process
       midResults <- list(
         symmetric_KNN_graph_object = symmetric_KNN_graph_object,
+        sNN_res = sNN_res,
         centrality_scores = centrality_scores,
         symmetric_KNN_graph_cluster = symmetric_KNN_graph_cluster,
-        centrality_scores_cluster = centrality_scores_cluster,
-        transitionMatrix = transitionMatrix
+        transitionMatrix = transitionMatrix,
+        C_matrix = C_matrix,
+        centrality_scores_cluster = centrality_scores_cluster
       )
       #The MarkovHC object
       MarkovHC_object <- list(
