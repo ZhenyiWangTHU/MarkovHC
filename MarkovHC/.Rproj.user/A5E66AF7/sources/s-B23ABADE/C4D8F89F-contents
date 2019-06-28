@@ -4,10 +4,10 @@
 #' Hierarchical Clustering Algorithm to the given data (a dataframe or a matrix).
 #' @param origin_matrix A matrix or a dataframe with row names and column names.
 #' Each row should be a feature and each column should be a sample.
-#' @param minrt A parameter helping to judge whether a group of samples is a
-#' qualified cluster. If we assume that we have \code{tol_num} samples in
-#' total, then a qualified cluster should be of size larger than
-#' \code{tol_num/minrt}. Default is 50.
+# #' @param minrt A parameter helping to judge whether a group of samples is a
+# #' qualified cluster. If we assume that we have \code{tol_num} samples in
+# #' total, then a qualified cluster should be of size larger than
+# #' \code{tol_num/minrt}. Default is 50.
 #' @param transformtype A character parameter indicating what kind of
 #' tranformation('arsinh' or 'none')would be applied to the original matrix.
 #' Default is 'none'.
@@ -39,10 +39,10 @@
 #' intermediate information.Default is FALSE.
 #' @param bn A numeric parameter indicates the power of the Minkowski distance.
 #' Default is 2.
-#' @param stop_rate A numeric parameter indicating a stopping criterion that
-#' if the number of samples belonging to qualified clusters exceeds
-#' \code{stop_rate*num_data}on this level, then the algorithm will stop and
-#' not bulid the higher hierachical structure. Default is 1.
+# #' @param stop_rate A numeric parameter indicating a stopping criterion that
+# #' if the number of samples belonging to qualified clusters exceeds
+# #' \code{stop_rate*num_data}on this level, then the algorithm will stop and
+# #' not bulid the higher hierachical structure. Default is 1.
 #' @details The data given by \code{origin_matrix} will be clustered by using
 #' the Markov Hierarchical Clustering Algorithm, which generates a hierarchical
 #' structure based on the metastability of exponentially perturbed Markov chain.
@@ -54,7 +54,7 @@
 #' @export
 
 MarkovHC = function(origin_matrix,
-                    minrt=50,
+                    #minrt=50,
                     transformtype="none",
                     KNN=20,
                     basecluster="louvain",
@@ -65,8 +65,9 @@ MarkovHC = function(origin_matrix,
                     weightDens=0.5,
                     cutpoint=0.05,
                     showprocess=FALSE,
-                    bn=2,
-                    stop_rate=1){
+                    bn=2
+                    #stop_rate=1
+                    ){
   ##step01.check the input parameters------------------------------------------
   #origin_matrix
   if((!is.matrix(origin_matrix))&(!is.data.frame(origin_matrix))){
@@ -75,14 +76,14 @@ MarkovHC = function(origin_matrix,
   }
   origin_matrix <- t(origin_matrix)
   #minrt
-  if(!is.numeric(minrt)){
-    print("The type of 'minrt' should be numeric!")
-    return(NULL)
-  }
-  if(minrt<=2){
-    print("The value of 'minrt' is too small!")
-    return(NULL)
-  }
+  #if(!is.numeric(minrt)){
+  #  print("The type of 'minrt' should be numeric!")
+  #  return(NULL)
+  #}
+  #if(minrt<=2){
+  #  print("The value of 'minrt' is too small!")
+  #  return(NULL)
+  #}
 
   #transformtype
   if(!is.character(transformtype)){
@@ -148,10 +149,10 @@ MarkovHC = function(origin_matrix,
     return(NULL)
   }
   #stop_rate
-  if(!is.numeric(stop_rate)){
-    print("The type of 'stop_rate' should be numeric!")
-    return(NULL)
-  }
+  #if(!is.numeric(stop_rate)){
+  #  print("The type of 'stop_rate' should be numeric!")
+  #  return(NULL)
+  #}
 
   #Do parallel
   ncore<-detectCores()
@@ -322,6 +323,21 @@ MarkovHC = function(origin_matrix,
                                                        mode = 'directed',
                                                        weighted = TRUE,
                                                        diag = TRUE)
+  #step04.3 Calculate the shortest distance between each vertex pair in the graph
+  print('Calculate the shortest distance between each vertex pair in the graph.')
+  C_matrix_graph_shortest_distance <- matrix(data = 0, nrow = nrow(C_matrix), ncol = nrow(C_matrix))
+  for (i in 1:nrow(C_matrix)) {
+    for (j in 1:nrow(C_matrix)) {
+      if(i==j){next}
+      C_matrix_graph_shortest_distance[i,j] <- distances(graph = C_matrix_graph_object,
+                                                         v = i,
+                                                         to = j,
+                                                         mode = 'out',
+                                                         weights = E(C_matrix_graph_object)$weight,
+                                                         algorithm = "dijkstra")%>%as.vector()
+    }
+  }
+
   ##step05. Build the hierarchical structure-----------------------------------
   P_updated <- transitionMatrix
   MarkovHC_result <- list()
@@ -368,13 +384,14 @@ MarkovHC = function(origin_matrix,
 
     ##step05.3 partition the state space
     processed_attractors <- integer(length = length(RS_vector))
-    processed_attractors[which(RS_vector==0)] <- 1
+    #processed_attractors[which(RS_vector==0)] <- 1
+    processed_attractors[which(RS_vector<=1e-6)] <- 1
     attractor_indice <- 1
     while(TRUE){
      if(all(processed_attractors==1)){break}
      print(paste('Find attractors in the basin ',as.character(attractor_indice),'.', sep = ''))
      attractor_temp <- which(processed_attractors==0)[1]
-     processed_attractors[attractor_temp] <- 1
+     #processed_attractors[attractor_temp] <- 1
      # P_updated_graph_sparse <- as(as.matrix(P_updated), "dgCMatrix")%>%Matrix::summary()%>%as.data.frame()
      # P_updated_graph_object <- make_graph(t(P_updated_graph_sparse[,1:2]), directed = TRUE)
      # graph_attr(P_updated_graph_object,'weight') <- P_updated_graph_sparse[,3]
@@ -382,17 +399,25 @@ MarkovHC = function(origin_matrix,
                                                            mode = 'directed',
                                                            weighted = TRUE,
                                                            diag = TRUE)
-     attractor_temp_access <- all_simple_paths(graph = P_updated_graph_object, from = attractor_temp,
-                                               mode = 'out')%>%unlist()%>%unique()
+     #attractor_temp_access <- all_simple_paths(graph = P_updated_graph_object, from = attractor_temp,
+     #                                         mode = 'out')%>%unlist()%>%unique()
+     #subcomponent includes the vertex itself in this graph
+     attractor_temp_access <- subcomponent(graph = P_updated_graph_object,
+                                           v = attractor_temp,
+                                           mode = "out")%>%as.vector()
      processed_attractors[attractor_temp_access] <- 1
-     attractors <- c(attractors, list(unique(c(attractor_temp_access, attractor_temp))))
-     basins_temp_merged <- c()
-       for (i in unique(c(attractor_temp_access, attractor_temp))) {
-         basins_temp <- all_simple_paths(graph = P_updated_graph_object, from = i,
-                                         mode = 'in')%>%unlist()%>%unique()
-         basins_temp_merged <- c(basins_temp_merged, basins_temp)
-       }
-     basins_temp_merged <- c(basins_temp_merged, unique(c(attractor_temp_access, attractor_temp)))%>%unique()
+     #attractors <- c(attractors, list(unique(c(attractor_temp_access, attractor_temp))))
+     attractors <- c(attractors, list(attractor_temp_access))
+     #basins_temp_merged <- c()
+     #  for (i in unique(c(attractor_temp_access, attractor_temp))) {
+     #    basins_temp <- all_simple_paths(graph = P_updated_graph_object, from = i,
+     #                                    mode = 'in')%>%unlist()%>%unique()
+     #   basins_temp_merged <- c(basins_temp_merged, basins_temp)
+     #  }
+     #basins_temp_merged <- c(basins_temp_merged, unique(c(attractor_temp_access, attractor_temp)))%>%unique()
+     basins_temp_merged <- subcomponent(graph = P_updated_graph_object,
+                                        v = attractor_temp,
+                                        mode = "in")%>%as.vector()
      basins <- c(basins, list(basins_temp_merged))
      attractor_indice <- attractor_indice+1
     }
@@ -418,17 +443,26 @@ MarkovHC = function(origin_matrix,
     }
 
     ##step05.5 update the pseudo energy matrix
+    print('Update the pseudo energy matrix.')
     C_matrix_updated <- matrix(data = 0, nrow = basinNum, ncol = basinNum)
+    #for (i in 1:basinNum) {
+    #  for (j in 1:basinNum) {
+    #    if(i==j){next}
+    #    C_matrix_updated[i,j] <- distances(graph = C_matrix_graph_object,
+    #                                       v = level_result$graphvertex_attractors[attractors[[i]]]%>%unlist()%>%unique(),
+    #                                       to = level_result$graphvertex_basins[basins[[j]]]%>%unlist()%>%unique(),
+    #                                       mode = 'out',
+    #                                       weights = E(C_matrix_graph_object)$weight,
+    #                                       algorithm = "dijkstra")%>%min()
+    #  }
+    #}
     for (i in 1:basinNum) {
-      for (j in 1:basinNum) {
-        if(i==j){next}
-        C_matrix_updated[i,j] <- distances(graph = C_matrix_graph_object,
-                                           v = level_result$graphvertex_attractors[attractors[[i]]]%>%unlist()%>%unique(),
-                                           to = level_result$graphvertex_basins[basins[[j]]]%>%unlist()%>%unique(),
-                                           mode = 'out',
-                                           weights = E(C_matrix_graph_object)$weight,
-                                           algorithm = "dijkstra")%>%min()
-      }
+     for (j in 1:basinNum) {
+       if(i==j){next}
+       source_v <- level_result$graphvertex_attractors[attractors[[i]]]%>%unlist()%>%unique()
+       target_v <- level_result$graphvertex_basins[basins[[j]]]%>%unlist()%>%unique()
+       C_matrix_updated[i,j] <- C_matrix_graph_shortest_distance[source_v, target_v]%>%min()
+     }
     }
 
     ##step05.6 constructe the list to store the result of MarkovHC algorithm
@@ -446,7 +480,7 @@ MarkovHC = function(origin_matrix,
       ##step06. Output the results---------------------------------------------
       #The input parameters
       inputParameters <- list(
-        minrt=minrt,
+        #minrt=minrt,
         transformtype=transformtype,
         KNN=KNN,
         basecluster=basecluster,
@@ -457,8 +491,8 @@ MarkovHC = function(origin_matrix,
         weightDens=weightDens,
         cutpoint=cutpoint,
         showprocess=showprocess,
-        bn=bn,
-        stop_rate=stop_rate
+        bn=bn
+        #stop_rate=stop_rate
       )
       #The results among the process
       midResults <- list(
@@ -468,6 +502,7 @@ MarkovHC = function(origin_matrix,
         symmetric_KNN_graph_cluster = symmetric_KNN_graph_cluster,
         transitionMatrix = transitionMatrix,
         C_matrix = C_matrix,
+        C_matrix_graph_shortest_distance = C_matrix_graph_shortest_distance,
         centrality_scores_cluster = centrality_scores_cluster
       )
       #The MarkovHC object
@@ -483,11 +518,7 @@ MarkovHC = function(origin_matrix,
       return(MarkovHC_object)
     }
     ##step07.1 update the transition probability matrix
+    print('Update the transition probability matrix.')
     P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
   }
 }
-
-
-
-
-

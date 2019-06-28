@@ -20,7 +20,7 @@
 judge_RS<-function(P=NULL){
   RSmatrix<-eigen(t(P),symmetric = FALSE)
   #the eigen value is close to 1 enough
-  eigen_value_one<-which(abs(RSmatrix$values-1)<1e-5)
+  eigen_value_one<-which(abs(RSmatrix$values-1)<1e-6)
   #eigen_value_one<-which(abs(RSmatrix$values-1)==0)
   if(length(eigen_value_one)==1){
     return(abs(RSmatrix$vectors[,eigen_value_one]))
