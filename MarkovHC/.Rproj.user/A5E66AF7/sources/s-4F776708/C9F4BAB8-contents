@@ -1,6 +1,7 @@
 library(MarkovHC)
 library(ggplot2)
 data("example1")
+example1 <- example1[sample(1:4209,500),]
 time1 <- proc.time()
 MarkovHC_example1 <- MarkovHC(origin_matrix=t(example1),
                               transformtype="none",
@@ -11,39 +12,37 @@ MarkovHC_example1 <- MarkovHC(origin_matrix=t(example1),
                               emphasizedistance=1,
                               weightDist=2,
                               weightDens=0.5,
-                              cutpoint=0.05,
+                              cutpoint=0.01,
                               showprocess=FALSE,
                               bn=2)
 time2 <-  proc.time() - time1
 
-ggplot(data = as.data.frame(example1), aes(x=x,y=y,color=centrality_scores))+geom_point(size=3)
+ggplot(data = as.data.frame(example1), aes(x=x,y=y,color=MarkovHC_example1$midResults$centrality_scores))+
+  geom_point(size=1)
 
 label <- integer(nrow(example1))
 pointscount <- c()
-for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level32$basinPoints)) {
-  label[MarkovHC_example1$hierarchicalStructure$level32$basinPoints[[i]]] <- i
-  pointscount <- c(pointscount, MarkovHC_example1$hierarchicalStructure$level32$basinPoints[[i]])%>%unique()
+for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level22$basinPoints)) {
+  label[MarkovHC_example1$hierarchicalStructure$level22$basinPoints[[i]]] <- i
+  pointscount <- c(pointscount, MarkovHC_example1$hierarchicalStructure$level22$basinPoints[[i]])%>%unique()
+}
+length(pointscount)
+dataframe.example1 <- as.data.frame(example1)
+dataframe.example1$label <- factor(label)
+ggplot(data = as.data.frame(dataframe.example1), aes(x=x,y=y,color=label))+geom_point(size=1.5)
+
+label <- integer(nrow(example1))
+pointscount <- c()
+for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level22$attractorPoints)) {
+  label[MarkovHC_example1$hierarchicalStructure$level22$attractorPoints[[i]]] <- i
+  pointscount <- c(pointscount, MarkovHC_example1$hierarchicalStructure$level22$attractorPoints[[i]])%>%unique()
 }
 length(pointscount)
 dataframe.example1 <- as.data.frame(example1)
 dataframe.example1$label <- factor(label)
 ggplot(data = as.data.frame(dataframe.example1), aes(x=x,y=y,color=label))+geom_point(size=3)
 
-label <- integer(nrow(example1))
-pointscount <- c()
-for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level32$attractorPoints)) {
-  label[MarkovHC_example1$hierarchicalStructure$level32$attractorPoints[[i]]] <- i
-  pointscount <- c(pointscount, MarkovHC_example1$hierarchicalStructure$level32$attractorPoints[[i]])%>%unique()
-}
-length(pointscount)
-dataframe.example1 <- as.data.frame(example1)
-dataframe.example1$label <- factor(label)
-ggplot(data = as.data.frame(dataframe.example1), aes(x=x,y=y,color=label))+geom_point(size=3)
 
-attractors <- c()
-for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level3$attractors)) {
-  attractors <- c(attractors, MarkovHC_example1$hierarchicalStructure$level3$attractors[[i]])%>%unique()
-}
 
 basins <- c()
 for (i in 1:length(MarkovHC_example1$hierarchicalStructure$level3$basins)) {
@@ -62,16 +61,16 @@ dim(nn$dist)
 nn.dist <- nn$dist
 View(nn.dist)
 
-origin_matrix=t(example1)
-transformtype="none"
+origin_matrix=t(sampleddata)
+transformtype="arsinh"
 KNN=20
-basecluster="kmeans"
+basecluster="louvain"
 dobasecluster=TRUE
-baseclusternum=200
+baseclusternum=300
 emphasizedistance=1
 weightDist=2
 weightDens=0.5
-cutpoint=0.05
+cutpoint=0.01
 showprocess=FALSE
 bn=2
 
@@ -111,11 +110,11 @@ setdiff(subcomponent(graph = P_updated_graph_object,
                                                                                                               mode = "in")%>%as.vector()))
 all_simple_paths(P_updated_graph_object, from=2, to = 183, mode = 'in')
 
-
-
+#example2
+data('example2')
 MarkovHC_example2 <- MarkovHC(origin_matrix=t(example2),
                               transformtype="none",
-                              KNN=20,
+                              KNN=10,
                               basecluster="kmeans",
                               dobasecluster=TRUE,
                               baseclusternum=100,
@@ -127,15 +126,33 @@ MarkovHC_example2 <- MarkovHC(origin_matrix=t(example2),
                               bn=2)
 label <- integer(nrow(example2))
 pointscount <- c()
-for (i in 1:length(MarkovHC_example2$hierarchicalStructure$level27$basinPoints)) {
-  label[MarkovHC_example2$hierarchicalStructure$level27$basinPoints[[i]]] <- i
-  pointscount <- c(pointscount, MarkovHC_example2$hierarchicalStructure$level27$basinPoints[[i]])%>%unique()
+for (i in 1:length(MarkovHC_example2$hierarchicalStructure$level34$basinPoints)) {
+  label[MarkovHC_example2$hierarchicalStructure$level34$basinPoints[[i]]] <- i
+  pointscount <- c(pointscount, MarkovHC_example2$hierarchicalStructure$level34$basinPoints[[i]])%>%unique()
 }
 length(pointscount)
 dataframe.example2 <- as.data.frame(example2)
 dataframe.example2$label <- factor(label)
-ggplot(data = as.data.frame(dataframe.example2), aes(x=x,y=y,color=label))+geom_point(size=3)
+ggplot(data = as.data.frame(dataframe.example2), aes(x=x,y=y,color=label))+geom_point(size=1.5)+theme(legend.position="none")
 
+attractors <- c()
+for (i in 1:length(MarkovHC_example2$hierarchicalStructure$level2$attractorPoints)) {
+  attractors <- c(attractors, MarkovHC_example2$hierarchicalStructure$level2$attractorPoints[[i]])%>%unique()
+}
+label <- integer(length = nrow(example2))
+label[attractors] <- 1
+dataframe.example2 <- as.data.frame(example2)
+dataframe.example2$label <- factor(label)
+ggplot(data = as.data.frame(dataframe.example2), aes(x=x,y=y,color=label))+geom_point(size=1.5)
+
+ggplot(data = as.data.frame(example2), aes(x=x,y=y,color=MarkovHC_example2$midResults$centrality_scores))+
+  geom_point(size=1)
+
+plot(MarkovHC_example2$midResults$sNN_res, as.data.frame(dataframe.example2))
+
+
+#helix
+data("helix_data")
 MarkovHC_helix_data <- MarkovHC(origin_matrix=t(helix_data),
                               transformtype="none",
                               KNN=20,
@@ -145,14 +162,14 @@ MarkovHC_helix_data <- MarkovHC(origin_matrix=t(helix_data),
                               emphasizedistance=1,
                               weightDist=2,
                               weightDens=0.5,
-                              cutpoint=0.05,
+                              cutpoint=0.01,
                               showprocess=FALSE,
                               bn=2)
 label <- integer(nrow(helix_data))
 pointscount <- c()
-for (i in 1:length(MarkovHC_helix_data$hierarchicalStructure$level2$basinPoints)) {
-  label[MarkovHC_helix_data$hierarchicalStructure$level2$basinPoints[[i]]] <- i
-  pointscount <- c(pointscount, MarkovHC_helix_data$hierarchicalStructure$level3$basinPoints[[i]])%>%unique()
+for (i in 1:length(MarkovHC_helix_data$hierarchicalStructure$level29$basinPoints)) {
+  label[MarkovHC_helix_data$hierarchicalStructure$level29$basinPoints[[i]]] <- i
+  pointscount <- c(pointscount, MarkovHC_helix_data$hierarchicalStructure$level29$basinPoints[[i]])%>%unique()
 }
 length(pointscount)
 dataframe.helix_data <- as.data.frame(helix_data)
@@ -172,6 +189,17 @@ ggplot(data = as.data.frame(dataframe.helix_data), aes(x=V1,y=V2,color=label))+g
 
 plot(MarkovHC_helix_data$midResults$sNN_res, helix_data)
 
-
-
+origin_matrix=t(helix_data)
+transformtype="none"
+KNN=20
+basecluster="kmeans"
+dobasecluster=TRUE
+baseclusternum=200
+emphasizedistance=1
+weightDist=2
+weightDens=0.5
+cutpoint=0.05
+showprocess=FALSE
+bn=2
+ggplot(data = as.data.frame(dataframe.helix_data), aes(x=V1,y=V2,color=centrality_scores))+geom_point(size=3)
 

@@ -1,0 +1,45 @@
+generate_helix_2<-function(loop_num){
+
+  ############################
+  # author:pku_zhongyanjie   #
+  # date:2017.12.08          #
+  # category:generate sample #
+  ############################
+
+  ###############################################################beautiful cut##################
+
+  # xita<-seq(0,loop_num*2*pi,0.005)
+  set.seed(3)
+  xita<-sort(c(rnorm(2000*loop_num,mean = pi/2+0.8*pi,sd=0.35),
+               rnorm(1000*loop_num,mean = pi/2+0.8*pi,sd=0.2),
+               seq(pi/2,loop_num*2*pi,0.05),
+               rnorm(500*loop_num,mean = pi/2+1.1*pi,sd=0.4)))
+  xita<-xita[which(xita>0)]
+  tonum<-length(xita)
+  # r<-seq(2,loop_num+5,length.out = tonum)
+  r<-(xita-min(xita)+2)/(max(xita)-min(xita))*(loop_num+3)
+  result<-matrix(nrow = tonum,ncol = 2)
+  set.seed(100)
+  result[,1]<-r*cos(xita)+rnorm(tonum,sd=0.08)
+  result[,2]<-r*sin(xita)+rnorm(tonum,sd=0.08)
+
+  xita<-sort(c(rnorm(2000*loop_num,mean = pi/2+1.8*pi,sd=0.4),
+               rnorm(1000*loop_num,mean = pi/2+1.8*pi,sd=0.2),
+               seq(pi+pi/2,loop_num*2*pi+pi,0.05),
+               rnorm(400*loop_num,mean = pi/2+2.2*pi,sd=0.5)))
+  xita<-xita[which(xita>0)]
+  tonum<-length(xita)
+  # r<-seq(2,loop_num+5,length.out = tonum)
+  r<-(xita-min(xita)+2)/(max(xita)-min(xita))*(loop_num+3)
+  result2<-matrix(nrow = tonum,ncol = 2)
+  set.seed(100)
+  result2[,1]<-r*cos(xita)+rnorm(tonum,sd=0.08)
+  result2[,2]<-r*sin(xita)+rnorm(tonum,sd=0.08)
+  result<-rbind(result,result2)
+
+  result3<-matrix(rnorm(ceiling(tonum/8)*4,sd=0.13),
+                  nrow = ceiling(tonum/8),ncol = 2)
+  result3[which(abs(result3)>0.4)]<-0.4
+  result<-rbind(result,result3)
+  return(result)
+}

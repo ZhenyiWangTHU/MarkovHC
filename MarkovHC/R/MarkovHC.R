@@ -65,7 +65,9 @@ MarkovHC = function(origin_matrix,
                     weightDens=0.5,
                     cutpoint=0.05,
                     showprocess=FALSE,
-                    bn=2
+                    bn=2,
+                    minBasinSize=0.2,
+                    noiseBasinSize=10
                     #stop_rate=1
                     ){
   ##step01.check the input parameters------------------------------------------
@@ -517,6 +519,31 @@ MarkovHC = function(origin_matrix,
       stopCluster(cl)
       return(MarkovHC_object)
     }
+
+    #If the basin is too small, we merge it to the cloest basin
+    max_basin_size <- length(basinPoints[[1]])
+    small_basins <- c()
+    if(length(basinPoints[[1]])<=noiseBasinSize){
+      small_basins <- c(small_basins, 1)
+    }
+    for (max_basin_indice in 2:length(basinPoints)) {
+      max_basin_size <- max(max_basin_size, length(basinPoints[[max_basin_indice]]))
+      if(length(basinPoints[[max_basin_indice]])<=noiseBasinSize){
+        small_basins <- c(small_basins, max_basin_indice)
+      }
+    }
+    if((max_basin_size/nrow(transformed_matrix))>=minBasinSize){
+      row_min <- apply(C_matrix_updated, 1, min)
+      #let it cannot be recurrent
+      for (small_basins_i in small_basins) {
+        C_matrix_updated[small_basins_i,small_basins_i] <- Inf
+      }
+      min_indice <- apply(C_matrix_updated, 1, which.min)
+      for (C_matrix_updated_rowi in 1:nrow(C_matrix_updated)) {
+        C_matrix_updated[C_matrix_updated_rowi,min_indice[C_matrix_updated_rowi]] <- row_min[C_matrix_updated_rowi]
+      }
+    }
+
     ##step07.1 update the transition probability matrix
     print('Update the transition probability matrix.')
     P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)

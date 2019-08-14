@@ -1,0 +1,84 @@
+#demo1
+demo1 <- read.table(file = "F:/MHA/newversion analysis/demo1.csv", sep = ",", header = T)
+demo1 <- demo1[,c(2,3)]
+# mhc_demo1 <- mhc(as.matrix(demo1), fanshu = 2, nsample = "all",
+#                  ngetrid = 0, suofang = 1.2, minrt = 10, 
+#                  modegetrid = "both", transformtype = "none",
+#                  extent_dump = "no", basecluster = "kmeans") 
+mhc_demo1 <- mhc(origin_datatable=demo1,
+                 lambda=1.2,
+                 minrt=300,
+                 transformtype="none",
+                 basecluster="kmeans",
+                 emphasizedistance=1,
+                 showprocess=FALSE,
+                 bn=2,
+                 stop_rate=0.9)
+
+clusterRatio = function(endResult = None,
+                        level=None,
+                        clusterNum=None){
+  clusterSize <- lengths(endResult$origin_allresult[[level]][[2]])
+  clusterSize <- sort(clusterSize)
+  ratio = sum(clusterSize[(length(clusterSize)-clusterNum+1):length(clusterSize)])/sum(clusterSize)
+  return(ratio)
+}  
+ratio_demo <- as.vector(1:length(mhc_demo1[["number_of_clusters"]]))
+for (i in 1:length(mhc_demo1[["number_of_clusters"]])) {
+  ratio_demo[i] <- clusterRatio(endResult = mhc_demo1, level = i, clusterNum = mhc_demo1[["number_of_clusters"]][i])
+}
+
+demo1_convert <- convert_2_label(endresult = mhc_demo1, origin_datatable = as.matrix(demo1), level = 5)
+demo1_label <- label_vector(demo1_convert)
+demo1_label <- as.data.frame(demo1_label)
+for (i in 1:nrow(demo1_label)) {
+  demo1_label[i,1] <- as.character(paste("cluster",demo1_label[i,1]))
+}
+ggplot(data=as.data.frame(demo1), mapping =  aes(x=V1, y=V2,color=demo1_label[,1])) + geom_point(size=2) +
+  theme(axis.text.x = element_text(size=15), axis.text.y = element_text(size=15),
+        axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20))+xlab("X")+ylab("Y")
+
+#plus critical points
+critical_point <- data.frame(1:50,1:50)
+critical_point[,1] <- runif(50, 10, 25)
+critical_point[,2] <- runif(50, 0, 10)
+colnames(critical_point) <- c("V1", "V2")
+demo1_c <- rbind(demo1, critical_point)
+ggplot(data=as.data.frame(demo1_c), mapping =  aes(x=V1, y=V2, color="black")) + geom_point(size=2)
+# demo1_c <- read.csv(file = "demo1.csv")
+# demo1_c <- demo1_c[,2:3]
+mhc_demo1 <- mhc(as.matrix(demo1_c), fanshu = 2, nsample = "all",
+                 ngetrid = 0, suofang = 1.2, minrt = 10, 
+                 modegetrid = "both", transformtype = "none",
+                 extent_dump = "no", basecluster = "kmeans") 
+
+ratio_demo <- as.vector(1:length(mhc_demo1[["nbig"]]))
+for (i in 1:length(mhc_demo1[["nbig"]])) {
+  ratio_demo[i] <- clusterRatio(endResult = mhc_demo1, level = i, clusterNum = mhc_demo1[["nbig"]][i])
+}
+
+demo1_convert <- convert_2_label(endresult = mhc_demo1, origin_datatable = as.matrix(demo1_c), level =12)
+demo1_label <- force_transform(demo1_convert)
+demo1_label <- as.data.frame(demo1_label)
+for (i in 1:nrow(demo1_label)) {
+  demo1_label[i,1] <- as.character(paste("cluster",demo1_label[i,1]))
+}
+ggplot(data=as.data.frame(demo1_c), mapping =  aes(x=V1, y=V2, color=demo1_label[,1])) + geom_point(size=2) +
+  theme(axis.text.x = element_text(size=15), axis.text.y = element_text(size=15),
+        axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20))+xlab("X")+ylab("Y")       
+
+getLabel <- get_label(endresult = mhc_demo1, origin_datatable = as.matrix(demo1_c), level = 12)
+unique(getLabel$label_vector)
+write.csv(demo1_c, file = "demo1.csv")
+
+#seperate all kinds of points
+label_vector <- as.data.frame(getLabel$label_vector)
+for (i in 1:nrow(label_vector)) {
+  label_vector[i,1] <- as.character(paste("cluster",label_vector[i,1]))
+}
+ggplot(data=as.data.frame(demo1_c), mapping =  aes(x=V1, y=V2, color=label_vector[,1])) + geom_point(size=2) +
+  theme(axis.text.x = element_text(size=15), axis.text.y = element_text(size=15),
+        axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20))+xlab("X")+ylab("Y") 
+
+
+
