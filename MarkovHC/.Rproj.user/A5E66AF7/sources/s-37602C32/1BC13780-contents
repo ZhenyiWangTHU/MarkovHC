@@ -34,7 +34,7 @@ label_mannual <- read.csv(file = "F:/Projects/MarkovHC/data/Cytof/label.csv")
 label_data_frame <- merge(label_data_frame, label_mannual, by="type", all=T, sort = F)
 MarkovHC_cytof <- MarkovHC(origin_matrix=t(sampleddata),
                            transformtype="arsinh",
-                           KNN=10,
+                           KNN=30,
                            basecluster="kmeans",
                            dobasecluster=TRUE,
                            baseclusternum=200,
@@ -49,9 +49,9 @@ sample_tsne <- Rtsne::Rtsne(asinh(sampleddata))
 sample_tsne_xy <- as.data.frame(sample_tsne$Y)
 label <- integer(nrow(sampleddata))
 pointscount <- c()
-for (i in 1:length(MarkovHC_cytof$hierarchicalStructure$level6$basinPoints)) {
-  label[MarkovHC_cytof$hierarchicalStructure$level6$basinPoints[[i]]] <- i
-  pointscount <- c(pointscount, MarkovHC_cytof$hierarchicalStructure$level6$basinPoints[[i]])%>%unique()
+for (i in 1:length(MarkovHC_cytof$hierarchicalStructure$level21$basinPoints)) {
+  label[MarkovHC_cytof$hierarchicalStructure$level21$basinPoints[[i]]] <- i
+  pointscount <- c(pointscount, MarkovHC_cytof$hierarchicalStructure$level21$basinPoints[[i]])%>%unique()
 }
 length(pointscount)
 ggplot(data=sample_tsne_xy, mapping =  aes(x=V1, y=V2, color=factor(label))) + geom_point(size=1)
@@ -198,5 +198,12 @@ pheatmap(CD8TM,color = colorRampPalette(c("navy", "white", "firebrick3"))(50), c
          cluster_cols=F, show_colnames = T, scale = "row")
 pheatmap(cD8TN,color = colorRampPalette(c("navy", "white", "firebrick3"))(50), cluster_rows=TRUE, show_rownames=F,
          cluster_cols=F, show_colnames = T, scale = "row")
+
+
+
+
+
+
+
 
 

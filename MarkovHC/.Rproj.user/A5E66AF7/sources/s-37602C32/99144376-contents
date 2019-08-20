@@ -1,0 +1,43 @@
+library(Rtsne)
+library(ggplot2)
+library(MarkovHC)
+data <- read.csv(file = "F:/Projects/MarkovHC/data/GSE75748/GSE75748_sc_cell_type_ec.csv/GSE75748_sc_cell_type_ec.csv",
+                 header = T,
+                 row.names = 1)
+genelist <- read.csv(file = "F:/Projects/MarkovHC/data/GSE75748/13059_2016_1033_MOESM2_ESM.csv")
+reallabel <- read.csv(file = "F:/Projects/MarkovHC/data/GSE75748/reallabel.csv")
+celltypeconvert <- read.csv(file = 'F:/Projects/MarkovHC/data/GSE75748/celltypeconvert.csv', header = F)
+colnames(reallabel) <- 'V1'
+reallabel <- merge(reallabel, celltypeconvert, by = 'V1', sort = FALSE)
+subData <- subset(data, rownames(data)%in%genelist[,1])
+tsneResult <- Rtsne::Rtsne(log(t(subData)+1))
+
+subData <- log(t(subData)+1)%>%t()
+GSE75748.Result <- MarkovHC(origin_matrix=subData,
+                            transformtype="none",
+                            KNN=200,
+                            basecluster="kmeans",
+                            dobasecluster=TRUE,
+                            baseclusternum=200,
+                            emphasizedistance=1,
+                            weightDist=2,
+                            weightDens=0.5,
+                            cutpoint=0.05,
+                            showprocess=FALSE,
+                            bn=2)
+label <- integer(ncol(subData))
+pointscount <- c()
+for (i in 1:length(GSE75748.Result$hierarchicalStructure$level22$basinPoints)) {
+  label[GSE75748.Result$hierarchicalStructure$level22$basinPoints[[i]]] <- i
+  pointscount <- c(pointscount, GSE75748.Result$hierarchicalStructure$level22$basinPoints[[i]])%>%unique()
+}
+length(pointscount)
+ggplot(data=as.data.frame(tsneResult$Y), mapping =  aes(x=V1, y=V2, color=factor(label))) + geom_point(size=2)
++theme(legend.position = 'none')
+ggplot(data=as.data.frame(tsneResult$Y), mapping =  aes(x=V1, y=V2, color=reallabel[,2])) + geom_point(size=2)
+
+plot(GSE75748.Result$midResults$sNN_res,data=as.data.frame(tsneResult$Y))
+ggplot(data=as.data.frame(tsneResult$Y), mapping =  aes(x=V1, y=V2, color=GSE75748.Result$midResults$centrality_scores)) + geom_point(size=2)
+
+
+

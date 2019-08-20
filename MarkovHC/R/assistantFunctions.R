@@ -73,10 +73,10 @@ update_P = function(C_matrix_updated=NULL,
     p_updated_indice <- p_updated
     diag(p_updated_indice) <- 0
   }
-  print(C_matrix_updated)
-  print(p_updated)
-  print(cutpoint)
-  return(p_updated)
+  #print(C_matrix_updated)
+  #print(p_updated)
+  #print(paste('cutpoint is ', as.character(cutpoint),'.', sep = ''))
+  return(list(p_updated, cutpoint))
 }
 
 

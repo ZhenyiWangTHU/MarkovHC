@@ -67,8 +67,8 @@ MarkovHC = function(origin_matrix,
                     showprocess=FALSE,
                     bn=2,
                     minBasinSize=0.2,
+                    #smallBasinSize=3,
                     noiseBasinSize=10
-                    #stop_rate=1
                     ){
   ##step01.check the input parameters------------------------------------------
   #origin_matrix
@@ -155,7 +155,7 @@ MarkovHC = function(origin_matrix,
   #  print("The type of 'stop_rate' should be numeric!")
   #  return(NULL)
   #}
-
+  set.seed(1)
   #Do parallel
   ncore<-detectCores()
   cl <- makeCluster(getOption("cl.cores", ncore))
@@ -163,6 +163,7 @@ MarkovHC = function(origin_matrix,
 
   ##step02.calculate SNN and build a strongly connected KNN graph--------------
   dm <- dist(transformed_matrix,method = "minkowski",p=bn)
+  dm_matrix <- as.matrix(dm)
   #step02.1 use sNN function to calculate shared nearest neighbors
   sNN_res <- sNN(x=dm,k=KNN,sort = FALSE)
   #step02.2 build a strongly connected KNN graph
@@ -223,7 +224,7 @@ MarkovHC = function(origin_matrix,
   #centrality_scores <- eigen_centrality(symmetric_KNN_graph_object, weights = symmetric_KNN_graph_sparse[,3])$vector
   centrality_scores <- degree(symmetric_KNN_graph_object, v = V(symmetric_KNN_graph_object),
                               mode = "total",
-                              loops = TRUE, normalized = FALSE)
+                              loops = TRUE, normalized = FALSE)+1
 
   ##step03.do preclustering----------------------------------------------------
   #hierarchical clustering or k-means clutering or finding Maximum clique.
@@ -467,17 +468,76 @@ MarkovHC = function(origin_matrix,
      }
     }
 
-    ##step05.6 constructe the list to store the result of MarkovHC algorithm
+    #If the basin is small, we regard it as noise adn merge it to the closest basin
+    C_matrix_updated_mergedsmallbasin <- C_matrix_updated
+
+    noise_basins <- c()
+    max_basin_size <- c()
+    #find noise basins and record the size of the biggest basin
+    for (max_basin_indice in 1:length(basinPoints)) {
+      max_basin_size <- max(max_basin_size, length(basinPoints[[max_basin_indice]]))
+      if(length(basinPoints[[max_basin_indice]])<=noiseBasinSize){
+        noise_basins <- c(noise_basins, max_basin_indice)
+      }
+    }
+
+    #qualified basins
+    qualified_basins <- setdiff(1:nrow(C_matrix_updated),noise_basins)
+    #calculate distances bwt noise basins with qualified basins
+    noise_basins_to_qualified_basins <- matrix(Inf,nrow(C_matrix_updated),nrow(C_matrix_updated))
+    for (noise_basins_i in noise_basins) {
+      for (qualified_basins_i in qualified_basins) {
+        noise_basins_to_qualified_basins_temp <- dm_matrix[basinPoints[[noise_basins_i]],basinPoints[[qualified_basins_i]]]
+        noise_basins_to_qualified_basins[noise_basins_i,qualified_basins_i] <- min(noise_basins_to_qualified_basins_temp)
+      }
+    }
+
+    #modify energy matrix
+    if((max_basin_size/nrow(transformed_matrix))>=minBasinSize){
+      print('Merge noise basins to qualified basins.')
+      row_min <- apply(C_matrix_updated_mergedsmallbasin, 1, min)
+      #let them cannot be recurrent
+      for (noise_basins_i in noise_basins) {
+        C_matrix_updated_mergedsmallbasin[noise_basins_i,noise_basins_i] <- Inf
+      }
+      #merge noise basins
+      for (noise_basins_i in noise_basins) {
+        if(sum(is.infinite(C_matrix_updated_mergedsmallbasin[noise_basins_i,]))==(nrow(C_matrix_updated))){
+          cloest_basin_index <- which(noise_basins_to_qualified_basins[noise_basins_i,]==min(noise_basins_to_qualified_basins[noise_basins_i,]))
+          C_matrix_updated_mergedsmallbasin[noise_basins_i,cloest_basin_index] <- row_min[noise_basins_i]
+        }else{
+          cloest_basin_index <- which(C_matrix_updated_mergedsmallbasin[noise_basins_i,]==min(C_matrix_updated_mergedsmallbasin[noise_basins_i,]))
+          C_matrix_updated_mergedsmallbasin[noise_basins_i,cloest_basin_index] <- row_min[noise_basins_i]
+        }
+      }
+    }
+
+    ##step05.6 update the transition probability matrix
+    C_matrix_updated_indice <- C_matrix_updated
+    diag(C_matrix_updated_indice) <- Inf
+
+    if((basinNum>1)&(all(is.infinite(C_matrix_updated_indice))==FALSE)){
+      print('Update the transition probability matrix.')
+      update_P_result <- update_P(C_matrix_updated=C_matrix_updated_mergedsmallbasin, C_cut=cutpoint)
+      P_updated <- update_P_result[[1]]
+      energyCutpoint <- update_P_result[[2]]
+    }
+
+    ##step05.7 constructe the list to store the result of MarkovHC algorithm
     level_result <- list(basins=basins,
                          attractors=attractors,
                          graphvertex_attractors=graphvertex_attractors,
                          graphvertex_basins=graphvertex_basins,
                          basinPoints=basinPoints,
                          attractorPoints=attractorPoints,
-                         basinNum=basinNum)
+                         basinNum=basinNum,
+                         C_matrix_updatedmatrix=C_matrix_updated,
+                         C_matrix_updated_mergedsmallbasin=C_matrix_updated_mergedsmallbasin,
+                         P_updated=P_updated,
+                         energyCutpoint=energyCutpoint
+                         )
     MarkovHC_result <- append(MarkovHC_result, list(level_result))
-    C_matrix_updated_indice <- C_matrix_updated
-    diag(C_matrix_updated_indice) <- Inf
+
     if((basinNum==1)|(all(is.infinite(C_matrix_updated_indice)))){
       ##step06. Output the results---------------------------------------------
       #The input parameters
@@ -498,12 +558,14 @@ MarkovHC = function(origin_matrix,
       )
       #The results among the process
       midResults <- list(
+        symmetric_KNN_graph = symmetric_KNN_graph,
         symmetric_KNN_graph_object = symmetric_KNN_graph_object,
         sNN_res = sNN_res,
         centrality_scores = centrality_scores,
         symmetric_KNN_graph_cluster = symmetric_KNN_graph_cluster,
         transitionMatrix = transitionMatrix,
         C_matrix = C_matrix,
+        C_matrix_graph_object=C_matrix_graph_object,
         C_matrix_graph_shortest_distance = C_matrix_graph_shortest_distance,
         centrality_scores_cluster = centrality_scores_cluster
       )
@@ -519,33 +581,5 @@ MarkovHC = function(origin_matrix,
       stopCluster(cl)
       return(MarkovHC_object)
     }
-
-    #If the basin is too small, we merge it to the cloest basin
-    max_basin_size <- length(basinPoints[[1]])
-    small_basins <- c()
-    if(length(basinPoints[[1]])<=noiseBasinSize){
-      small_basins <- c(small_basins, 1)
-    }
-    for (max_basin_indice in 2:length(basinPoints)) {
-      max_basin_size <- max(max_basin_size, length(basinPoints[[max_basin_indice]]))
-      if(length(basinPoints[[max_basin_indice]])<=noiseBasinSize){
-        small_basins <- c(small_basins, max_basin_indice)
-      }
-    }
-    if((max_basin_size/nrow(transformed_matrix))>=minBasinSize){
-      row_min <- apply(C_matrix_updated, 1, min)
-      #let it cannot be recurrent
-      for (small_basins_i in small_basins) {
-        C_matrix_updated[small_basins_i,small_basins_i] <- Inf
-      }
-      min_indice <- apply(C_matrix_updated, 1, which.min)
-      for (C_matrix_updated_rowi in 1:nrow(C_matrix_updated)) {
-        C_matrix_updated[C_matrix_updated_rowi,min_indice[C_matrix_updated_rowi]] <- row_min[C_matrix_updated_rowi]
-      }
-    }
-
-    ##step07.1 update the transition probability matrix
-    print('Update the transition probability matrix.')
-    P_updated <- update_P(C_matrix_updated=C_matrix_updated, C_cut=cutpoint)
   }
 }

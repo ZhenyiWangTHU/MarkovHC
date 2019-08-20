@@ -1,0 +1,141 @@
+#Petropoulos-------------------------------------------------------------------
+library(MarkovHC)
+library(ggplot2)
+library(Seurat)
+library(ggalluvial)
+library(dplyr)
+petro <- read.table(file = "F:/Projects/MarkovHC/data/Single-Cell RNA-Seq Reveals Lineage and X Chromosome Dynamics in Human Preimplantation Embryos/E-MTAB-3929.processed.1/counts.txt", header = T)
+
+#arrange the label-------------------------------------------------------------
+petro_rowname  <- colnames(petro)
+petro_rowname_label <- data.frame(1:1529, stringsAsFactors = F)
+for (i in 1:length(petro_rowname)) {
+  if(grepl("E3\\.[0-9]", petro_rowname[i])){petro_rowname_label[i,1] <- "E3"
+  }else if(grepl("E4\\.[0-9]", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E4"
+  }else if(grepl("E4\\.late", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E4 late"
+  }else if(grepl("E5\\.early", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E5 early"
+  }else if(grepl("E5\\.[0-9]", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E5"
+  }else if(grepl("E6\\.[0-9]", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E6"
+  }else if(grepl("E7\\.[0-9]", petro_rowname[i])){
+    petro_rowname_label[i,1] <- "E7"
+  }
+}
+
+#Seurat
+ESCobject <- CreateSeuratObject(counts = petro,
+                                 project = 'ESCobject',
+                                 min.cells = 10,
+                                 min.feature = 200)
+ESCobject[["percent.mt"]] <- PercentageFeatureSet(ESCobject, pattern = "^mt-")
+VlnPlot(ESCobject, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+ESCobjectplot1 <- FeatureScatter(ESCobject, feature1 = "nCount_RNA", feature2 = "percent.mt")
+ESCobjectplot2 <- FeatureScatter(ESCobject, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+CombinePlots(plots = list(ESCobjectplot1, ESCobjectplot2))
+
+ESCobject <- NormalizeData(ESCobject, normalization.method = "LogNormalize", scale.factor = 10000)
+
+ESCobject <- FindVariableFeatures(ESCobject, selection.method = "vst", nfeatures = 3000)
+# Identify the 10 most highly variable genes
+ESCobjecttop10 <- head(VariableFeatures(ESCobject), 10)
+# plot variable features with and without labels
+ESCobjectplot1 <- VariableFeaturePlot(ESCobject)
+ESCobjectplot2 <- LabelPoints(plot = ESCobjectplot1, points = ESCobjecttop10, repel = TRUE)
+ESCobjectplot2
+ESCobject <- ScaleData(ESCobject, features = rownames(ESCobject))
+ESCobject <- RunPCA(ESCobject, features = VariableFeatures(object = ESCobject), verbose=FALSE)
+
+ElbowPlot(ESCobject, ndims = 50)
+
+ESCobject <- RunTSNE(object = ESCobject, dims=1:20)
+DimPlot(ESCobject, reduction = "tsne")
+
+ESCobject@meta.data$stage <- petro_rowname_label[,1]
+colorvector <- c(
+                  "E3"="#66c2a5",
+                  "E4"="#fc8d62",
+                  "E4 late"="#8da0cb",
+                  "E5 early"="#e78ac3",
+                  "E5"="#a6d854",
+                  "E6"="#ffd92f",
+                  "E7"="#1f78b4"
+)
+DimPlot(ESCobject, reduction = "pca",group.by='stage', cols = colorvector, pt.size=3,label = T,
+        label.size = 6)
+
+#MarkovHC------------------------------------------------------------------
+scale.data <- GetAssayData(object = ESCobject, slot = "scale.data")
+scale.data <- subset(scale.data, rownames(scale.data)%in%ESCobject@assays$RNA@var.features)
+MarkovHC_ESCobject <- MarkovHC(origin_matrix=scale.data,
+                                transformtype="none",
+                                KNN=50,
+                                basecluster="kmeans",
+                                dobasecluster=TRUE,
+                                baseclusternum=200,
+                                emphasizedistance=1,
+                                weightDist=2,
+                                weightDens=0.5,
+                                cutpoint=0.01,
+                                showprocess=FALSE,
+                                bn=2,
+                                minBasinSize=0.2,
+                                noiseBasinSize=20)
+sankeyResult_ESCobject <- sankeyResult(MarkovObject = MarkovHC_ESCobject,
+                                       MarkovLevels = c(1,17,20,22))
+for (i in 1:ncol(sankeyResult_ESCobject)) {
+  sankeyResult_ESCobject[,i] <- paste(colnames(sankeyResult_ESCobject)[i],sankeyResult_ESCobject[,i], sep = '_basin')
+}
+sankeyResult_ESCobject$Freq <- rep(1,nrow(sankeyResult_ESCobject))
+colorvector <- c(
+  "level20_basin1"="#fc8d62",
+  "level20_basin2"="#8da0cb",
+  "level20_basin3"="#e78ac3",
+  "level20_basin4"="#ffd92f",
+  "level20_basin5"="#1f78b4",
+  "level20_basin6"="#a6d854",
+  "level20_basin7"="#66c2a5"
+)
+
+sankeyPlot_ESCobject <- ggplot(sankeyResult_ESCobject,
+       aes(y = Freq, axis1 = index, axis2=level17, axis3=level20, axis4=level22)) +
+  geom_alluvium(aes(fill = level20,color = level20),
+                width = 1/20, alpha = 0.7, knot.pos = 1/3,reverse = T) +
+  geom_stratum(width = 1/3,reverse =T,alpha = 0.3,
+               color = 'black') +
+  geom_label(stat = "stratum", label.strata = T) +
+  scale_x_continuous(breaks = 1:4, labels = c("level0","level7", "level20", "level22"))+
+  scale_fill_manual(values  = colorvector) +
+  scale_color_manual(values = colorvector) +
+  ggtitle("The ESC development landscape") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 15, face = "plain")
+  )
+
+pdf('F:/Projects/MarkovHC/results/ESCDevelopment/sankeyplot.pdf')
+print(sankeyPlot_ESCobject)
+dev.off()
+
+ESCobject@meta.data$basin <- sankeyResult_ESCobject[,4]
+
+DimPlot(ESCobject, reduction = "pca", group.by='basin', cols = colorvector, pt.size=3,label = T,
+        label.size = 6)
+
+Idents(object = ESCobject) <- sankeyResult_ESCobject[,4]
+
+ESCobject.markers <- FindAllMarkers(ESCobject,
+                                    #features=ESCobject@assays$RNA@var.features,
+                                    min.pct = 0.25,
+                                    logfc.threshold = 0.25,
+                                    only.pos=TRUE)
+ESCobject.markerstop50 <- ESCobject.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+#ESCobject.markers <- ESCobject.markers[order(ESCobject.markers[,2], decreasing = T),]
+save.image('F:/Projects/MarkovHC/results/ESCDevelopment/ESCDevelopment.RData')
+pdf('F:/Projects/MarkovHC/results/ESCDevelopment/DoHeatmap.pdf')
+print(DoHeatmap(ESCobject, features = ESCobject.markerstop50$gene,angle = 30,size=3))
+dev.off()
+
