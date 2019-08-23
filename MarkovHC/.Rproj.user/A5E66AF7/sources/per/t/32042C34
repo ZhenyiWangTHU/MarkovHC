@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1561000960349.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1104802134",
+    "id" : "32042C34",
+    "lastKnownWriteTime" : 1566477270,
+    "last_content_update" : 1566477270056,
+    "path" : "F:/Github/MarkovHC/MarkovHC/R/assistantFunctions.R",
+    "project_path" : "R/assistantFunctions.R",
+    "properties" : {
+        "cursorPosition" : "63,31",
+        "scrollLine" : "46"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
