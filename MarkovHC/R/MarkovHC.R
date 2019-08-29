@@ -171,6 +171,51 @@ MarkovHC = function(origin_matrix,
   for (i in 1:nrow(sNN_res$shared)) {
     KNN_graph[i,sNN_res$id[i,]] <- sNN_res$shared[i,]
   }
+
+  # #calculate sNN by loop
+  # deprecated, because it's too slow
+  # for (i in 1:nrow(dm_matrix)) {
+  #   for (j in 1:ncol(dm_matrix)) {
+  #     KNN_i <- order(dm_matrix[i,], decreasing = FALSE)[1:KNN]
+  #     KNN_j <- order(dm_matrix[j,], decreasing = FALSE)[1:KNN]
+  #     KNN_graph[i,j] <- intersect(KNN_i,KNN_j)%>%length()
+  #   }
+  # }
+
+  # deprecated, because it's not fast enough
+  # SNNCalculate <- function(x,y){
+  #   intersect(x,y)%>%length()
+  # }
+  # test_snn <- matrix(0,nrow(transformed_matrix),nrow(transformed_matrix))
+  # for (i in 1:nrow(test)) {
+  #   test_snn[i,] <- apply(test, 1, SNNCalculate, test[i,])
+  # }
+
+  #accelerate by Rcpp
+  orderKNN <- function(x,y){
+    order(x,decreasing = FALSE)[1:y]
+  }
+  KNN_index_temp <- apply(dm_matrix, 1, orderKNN,KNN)
+  KNN_index_temp <- t(KNN_index_temp)
+  cppFunction('
+  IntegerMatrix SNNCalculate(IntegerMatrix KNN_matrix){
+    int nRow1 = KNN_matrix.rows();
+    int nRow2 = KNN_matrix.rows();
+    IntegerMatrix SNN_matrix(nRow1,nRow2);
+    Function intersect("intersect");
+    for(int i=0;i < nRow1;i++){
+       for(int j=i;j < nRow2;j++){
+        IntegerVector vector1 = KNN_matrix( i, _);
+        IntegerVector vector2 = KNN_matrix( j, _);
+        IntegerVector intersectNN = intersect(_["x"]=vector1,_["y"]=vector2);
+        int SNN_count = intersectNN.size();
+        SNN_matrix(i,j) = SNN_count;
+       }
+    }
+    return(SNN_matrix);
+   }')
+  KNN_graph <- SNNCalculate(KNN_index_temp)
+  KNN_graph[lower.tri(KNN_graph)] <- t(KNN_graph)[lower.tri(KNN_graph)]
   #convert asymmetric matrix of KNN to symmetric matrix of KNN
   #But here we use SNN, this step could be deprecated
   KNN_graph_T <- t(KNN_graph)
