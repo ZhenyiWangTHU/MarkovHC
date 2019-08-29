@@ -1,0 +1,263 @@
+#simulate data
+library(dplyr)
+library(car)
+library(dplyr)
+library(MASS)
+library(MarkovHC)
+library(ggplot2)
+library(ggalluvial)
+#
+# example3 <- mvrnorm(n=100, mu=c(10,10), Sigma=matrix(c(10,9.5,9.5,10),2,2))%>%as.data.frame()
+# example3 <- rbind(example3,
+#                    mvrnorm(n=100, mu=c(10,10), Sigma=matrix(c(10,-9.5,-9.5,10),2,2)))
+# example3 <- rbind(example3,
+#                    mvrnorm(n=200, mu=c(25,25), Sigma=matrix(c(5,0,0,5),2,2)))
+# example3 <- rbind(example3,
+#                    mvrnorm(n=500, mu=c(30,10), Sigma=matrix(c(3,0,0,0.5),2,2)))
+# example3 <- rbind(example3,
+#                    mvrnorm(n=500, mu=c(10,25), Sigma=matrix(c(3,0,0,3),2,2)))
+#
+# example3 <- rbind(example3,
+#                    mvrnorm(n=300, mu=c(25,25), Sigma=matrix(c(1,0,0,1),2,2)))
+# example3 <- rbind(example3,
+#                    mvrnorm(n=300, mu=c(10,10), Sigma=matrix(c(1,0,0,1),2,2)))
+# example3 <- rbind(example3,
+#                    cbind(runif(n= 50 ,min = -1, max = 36),runif(n= 50 ,min = 0, max = 36)))
+# example3 <- rbind(example3,
+#                    cbind(runif(n= 30 ,min = 13, max = 21),runif(n= 30 ,min = 22, max = 27)))
+# usethis::use_data(example3)
+#
+# plot(example3)
+#
+# dataEllipse(example3[1:100,]$V1, example3[1:100,]$V2, add=T,center.pch=NULL,
+#             fill=TRUE, fill.alpha=0.1,levels=c(0.1,0.5,0.9),lwd=1, lty=2)
+# dataEllipse(example3[100:200,]$V1, example3[100:200,]$V2, add=T, center.pch = NULL,
+#             fill=TRUE, fill.alpha=0.1,levels=c(0.1,0.5,0.9),lwd=1, lty=2)
+# dataEllipse(example3[200:400,]$V1, example3[200:400,]$V2, add=T, center.pch = NULL,
+#             fill=TRUE, fill.alpha=0.1,levels=c(0.1,0.5,0.9),lwd=1, lty=2)
+# dataEllipse(example3[400:900,]$V1, example3[400:900,]$V2, add=T, center.pch = NULL,
+#             fill=TRUE, fill.alpha=0.1,levels=c(0.1,0.5,0.9),lwd=1, lty=2)
+# dataEllipse(example3[900:1400,]$V1, example3[900:1400,]$V2, add=T, center.pch = NULL,
+#             fill=TRUE, fill.alpha=0.1,levels=c(0.1,0.5,0.9),lwd=1, lty=2)
+
+##example3
+data("example3")
+#MarkovHC
+MarkovHC_3 <- MarkovHC(origin_matrix=t(example3),
+                        transformtype="none",
+                        KNN=50,
+                        basecluster="kmeans",
+                        dobasecluster=TRUE,
+                        baseclusternum=100,
+                        emphasizedistance=1,
+                        weightDist=2,
+                        weightDens=0.5,
+                        cutpoint=0.01,
+                        showprocess=FALSE,
+                        bn=2,
+                        minBasinSize=0.2,
+                        noiseBasinSize=10)
+
+sankeyResult_MarkovHC_3 <- sankeyResult(MarkovObject = MarkovHC_3,
+                                         MarkovLevels = 15:18)
+
+head(sankeyResult_MarkovHC_3)
+basin <- vector(length = nrow(example3))
+for (i in 1:length(basin)) {
+  indexi <- subset(sankeyResult_MarkovHC_3,sankeyResult_MarkovHC_3[,1]==i)
+  basin[i] <- paste(unique(indexi[,2])%>%sort(), collapse = '+')
+}
+basin <- paste('basin',basin,sep = '')
+level <- 15
+for (i in 1:length(MarkovHC_3$hierarchicalStructure[[level]]$attractorPoints)) {
+  basin[MarkovHC_3$hierarchicalStructure[[level]]$attractorPoints[[i]]] <- "attractors"
+}
+
+#find the transition points
+label <- findTransitionPoints(MarkovObject = MarkovHC_3,
+                              level = 15,
+                              basinA = 3,
+                              basinB = 2)
+basin[which(label==1)] <- 'transition 3 vs 2'
+label <- findTransitionPoints(MarkovObject = MarkovHC_3,
+                              level = 15,
+                              basinA = 3,
+                              basinB = 4)
+basin[which(label==1)] <- 'transition 3 vs 4'
+label <- findTransitionPoints(MarkovObject = MarkovHC_3,
+                              level = 15,
+                              basinA = 4,
+                              basinB = 1)
+basin[which(label==1)] <- 'transition 4 vs 1'
+dataframe.example3 <- as.data.frame(example3)
+dataframe.example3$labels <- factor(basin)
+layout <- as.data.frame(dataframe.example3)
+#Figure1.B
+png(filename = 'F:/Projects/MarkovHC/Figures/Figure1.B.png', width = 550, height = 500)
+ggplot(data=layout, mapping =  aes(x=V1, y=V2)) +
+  geom_point(size=2.5, shape=21, aes(fill=labels), color="#525252")+
+  xlim(min(layout$V1)-1,max(layout$V1)+1)+
+  ylim(min(layout$V2)-1,max(layout$V2)+1)+
+  theme(panel.grid.major =element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(size = 1,
+                                 colour = "black"),
+        axis.title.x =element_text(size=20),
+        axis.text.x = element_text(size = 20,
+                                  family = "sans",
+                                  color = "black",
+                                  face = "bold",
+                                  vjust = 0,
+                                  hjust = 0),
+        axis.text.y = element_text(size = 20,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold",
+                                   vjust = 0,
+                                   hjust = 1),
+        axis.title.y=element_text(size=20,
+                                  family = "sans",
+                                  color = "black",
+                                  face = "bold"),
+        legend.text = element_text(size=15,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold"),
+        legend.title = element_text(size=15,
+                                    family = "sans",
+                                    color = "black",
+                                    face = "bold"))+
+  xlab("x") + ylab("y")+
+  scale_fill_manual(
+    values = c("basin1"="#377eb8",
+               "basin2"="#4daf4a",
+               "basin3"="#984ea3",
+               "basin4"="#ff7f00",
+               "attractors"="#e41a1c",
+               "transition 3 vs 2"="#b2df8a",
+               "transition 3 vs 4"="#cab2d6",
+               'transition 4 vs 1'="#a6cee3"),
+    breaks = c("basin1",
+               "basin2",
+               "basin3",
+               "basin4",
+               "attractors",
+               "transition 3 vs 2",
+               "transition 3 vs 4",
+               'transition 4 vs 1'))
+dev.off()
+#Figure1.C
+png(filename = 'F:/Projects/MarkovHC/Figures/Figure1.C.png', width = 550, height = 500)
+centrality_scores <- MarkovHC_3$midResults$centrality_scores
+ggplot(data=layout, mapping =  aes(x=V1, y=V2, color=centrality_scores)) +
+  geom_point(size=2, shape=19)+
+  xlim(min(layout$V1)-1,max(layout$V1)+1)+
+  ylim(min(layout$V2)-1,max(layout$V2)+1)+
+  theme(panel.grid.major =element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(size = 1,
+                                 colour = "black"),
+        axis.title.x =element_text(size=20),
+        axis.text.x = element_text(size = 20,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold",
+                                   vjust = 0,
+                                   hjust = 0),
+        axis.text.y = element_text(size = 20,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold",
+                                   vjust = 0,
+                                   hjust = 1),
+        axis.title.y=element_text(size=20,
+                                  family = "sans",
+                                  color = "black",
+                                  face = "bold"),
+        legend.text = element_text(size=15,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold"),
+        legend.title = element_text(size=15,
+                                    family = "sans",
+                                    color = "black",
+                                    face = "bold"))+
+  xlab("x") + ylab("y")
+dev.off()
+
+
+for (i in 1:ncol(sankeyResult_MarkovHC_3)) {
+  sankeyResult_MarkovHC_3[,i] <- paste(colnames(sankeyResult_MarkovHC_3)[i],sankeyResult_MarkovHC_3[,i], sep = '_basin')
+}
+sankeyResult_MarkovHC_3$Freq <- rep(1,nrow(sankeyResult_MarkovHC_3))
+colorvector <- c(
+  "level15_basin1"="#377eb8",
+  "level15_basin2"="#4daf4a",
+  "level15_basin3"="#984ea3",
+  "level15_basin4"="#ff7f00"
+)
+#sankeyPlot
+sankeyPlot_MarkovHC_3 <- ggplot(sankeyResult_MarkovHC_3,
+                               aes(y = Freq, axis1=level15, axis2=level16, axis3=level17, axis4=level18)) +
+  geom_alluvium(aes(fill = level15,color = level15),
+                width = 1/20, alpha = 0.7, knot.pos = 1/3,reverse = T) +
+  geom_stratum(width = 1/3,reverse =T,alpha = 0.3,
+               color = 'black') +
+  geom_label(stat = "stratum",
+             label.strata = T,
+             size = 5,
+             family = "sans",
+             color = "black",
+             fontface = "bold") +
+  scale_x_continuous(breaks = 1:4, labels = c("level15","level16", "level17","level18"))+
+  scale_fill_manual(values  = colorvector) +
+  scale_color_manual(values = colorvector) +
+  ggtitle("") +
+  theme(panel.grid.major =element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(size = 1,
+                                 colour = "black"),
+        axis.title.x =element_text(size=20),
+        axis.text.x = element_text(size = 20,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold",
+                                   vjust = 0,
+                                   hjust = 0),
+        axis.text.y = element_text(size = 20,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold",
+                                   vjust = 0,
+                                   hjust = 1),
+        axis.title.y=element_text(size=20,
+                                  family = "sans",
+                                  color = "black",
+                                  face = "bold"),
+        legend.text = element_text(size=15,
+                                   family = "sans",
+                                   color = "black",
+                                   face = "bold"),
+        legend.title = element_text(size=15,
+                                    family = "sans",
+                                    color = "black",
+                                    face = "bold"))+
+  xlab("levels") + ylab("points")
+png(filename = 'F:/Projects/MarkovHC/Figures/Figure1.D.png', width = 1000, height = 500)
+print(sankeyPlot_MarkovHC_3)
+dev.off()
+
+pdf(file = 'F:/Projects/MarkovHC/Figures/Figure1.D.pdf', width = 1000, height = 500)
+print(sankeyPlot_MarkovHC_3)
+dev.off()
+
+##example helix
+
+
+
+
+
+

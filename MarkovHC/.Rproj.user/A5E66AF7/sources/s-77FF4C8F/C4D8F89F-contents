@@ -165,25 +165,81 @@ MarkovHC = function(origin_matrix,
   dm <- dist(transformed_matrix,method = "minkowski",p=bn)
   dm_matrix <- as.matrix(dm)
   #step02.1 use sNN function to calculate shared nearest neighbors
+  #Only calculate sNN of points are in each others snn list.
   sNN_res <- sNN(x=dm,k=KNN,sort = FALSE)
+
   #step02.2 build a strongly connected KNN graph
+
   KNN_graph <- matrix(0,nrow(transformed_matrix),nrow(transformed_matrix))
   for (i in 1:nrow(sNN_res$shared)) {
-    KNN_graph[i,sNN_res$id[i,]] <- sNN_res$shared[i,]
+     KNN_graph[i,sNN_res$id[i,]] <- sNN_res$shared[i,]
   }
+
+  # deprecated, because it's too slow
+  # for (i in 1:nrow(dm_matrix)) {
+  #   for (j in 1:ncol(dm_matrix)) {
+  #     KNN_i <- order(dm_matrix[i,], decreasing = FALSE)[1:KNN]
+  #     KNN_j <- order(dm_matrix[j,], decreasing = FALSE)[1:KNN]
+  #     KNN_graph[i,j] <- intersect(KNN_i,KNN_j)%>%length()
+  #   }
+  # }
+
+  # deprecated, because it's not fast enough
+  # SNNCalculate <- function(x,y){
+  #   intersect(x,y)%>%length()
+  # }
+  # test_snn <- matrix(0,nrow(transformed_matrix),nrow(transformed_matrix))
+  # for (i in 1:nrow(test)) {
+  #   test_snn[i,] <- apply(test, 1, SNNCalculate, test[i,])
+  # }
+
+  #deprecated, accelerate by Rcpp, but the connections are too strong
+  # orderKNN <- function(x,y){
+  #   order(x,decreasing = FALSE)[1:y]
+  # }
+  # KNN_index_temp <- apply(dm_matrix, 1, orderKNN, KNN)
+  # KNN_index_temp <- t(KNN_index_temp)
+  # print('Calculate shared nearest neighbors of points.')
+  # cppFunction('
+  # IntegerMatrix SNNCalculate(IntegerMatrix KNN_matrix){
+  #   int nRow1 = KNN_matrix.rows();
+  #   int nRow2 = KNN_matrix.rows();
+  #   IntegerMatrix SNN_matrix(nRow1,nRow2);
+  #   Function intersect("intersect");
+  #   for(int i=0;i < nRow1;i++){
+  #      for(int j=i;j < nRow2;j++){
+  #       IntegerVector vector1 = KNN_matrix( i, _);
+  #       IntegerVector vector2 = KNN_matrix( j, _);
+  #       IntegerVector intersectNN = intersect(_["x"]=vector1,_["y"]=vector2);
+  #       int SNN_count = intersectNN.size();
+  #       SNN_matrix(i,j) = SNN_count;
+  #      }
+  #   }
+  #   return(SNN_matrix);
+  #  }')
+  # KNN_graph <- SNNCalculate(KNN_index_temp)
+  # for (i in 1:nrow(KNN_graph)) {
+  #   KNN_graph[i,setdiff(1:ncol(KNN_graph),KNN_index_temp[i,])] <- 0
+  # }
+  # KNN_graph[lower.tri(KNN_graph)] <- t(KNN_graph)[lower.tri(KNN_graph)]
+
   #convert asymmetric matrix of KNN to symmetric matrix of KNN
   #But here we use SNN, this step could be deprecated
+
   KNN_graph_T <- t(KNN_graph)
   KNN_graph_index <- KNN_graph
   KNN_graph_index[which(KNN_graph_index>0)] <- Inf
   KNN_graph_T_index <- KNN_graph_T
   KNN_graph_T_index[which(KNN_graph_T_index>0)] <- Inf
   symmetric_KNN_graph <- KNN_graph+KNN_graph_T
+
   #the elements on double positive index should be divided by 2, do not need to do
   #that on one or zero positive index.
   symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)] <- symmetric_KNN_graph[is.infinite(KNN_graph_index)&is.infinite(KNN_graph_T_index)]/2
-  rm(list = c('KNN_graph', 'KNN_graph_T', 'KNN_graph_index', 'KNN_graph_T_index'))
+
+  rm(list = c('KNN_graph','KNN_graph_T', 'KNN_graph_index', 'KNN_graph_T_index'))
   gc(verbose=FALSE)
+
   ##below method is deprecated because of slow calculateing speed
   # KNN_graph <- as.matrix(dm)
   # bulid_KNN_row <- function(x,n=KNN){
