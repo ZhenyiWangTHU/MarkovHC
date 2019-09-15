@@ -175,6 +175,13 @@ MarkovHC = function(origin_matrix,
      KNN_graph[i,sNN_res$id[i,]] <- sNN_res$shared[i,]
   }
 
+  #If some people install the develop vesion of dbscan, we should use the
+  #block below, refer to https://github.com/mhahsler/dbscan/issues/37 that
+  #I reported to them.
+  # for(i in 1:nrow(sNN_res$shared)){
+  #   KNN_graph[setdiff(1:nrow(KNN_graph),sNN_res$id[i,]),i] <- 0
+  # }
+
   # deprecated, because it's too slow
   # for (i in 1:nrow(dm_matrix)) {
   #   for (j in 1:ncol(dm_matrix)) {

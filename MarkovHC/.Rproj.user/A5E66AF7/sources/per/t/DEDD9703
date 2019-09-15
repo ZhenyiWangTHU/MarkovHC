@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568119589847.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2049084135",
+    "id" : "DEDD9703",
+    "lastKnownWriteTime" : 1568176754,
+    "last_content_update" : 1568176754214,
+    "path" : "F:/Github/MarkovHC/MarkovHC/R/orderMarkovHC.R",
+    "project_path" : "R/orderMarkovHC.R",
+    "properties" : {
+        "cursorPosition" : "22,22",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
