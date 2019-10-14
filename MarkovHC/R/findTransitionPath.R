@@ -1,12 +1,12 @@
-##Find the transition points between basins
+##Find the transition path from basinA to basinB
 #' @export
-findTransitionPoints = function(MarkovObject = NULL,
-                                level = NULL,
-                                basinA = NULL,
-                                basinB = NULL){
+findTransitionPath = function(MarkovObject = NULL,
+                              level = NULL,
+                              basinA = NULL,
+                              basinB = NULL){
   C_matrix_graph_object <- MarkovObject[["midResults"]][["C_matrix_graph_object"]]
   paths <- list()
-  for (i in MarkovObject$hierarchicalStructure[[level]]$graphvertex_basins[[basinA]]) {
+  for (i in MarkovObject$hierarchicalStructure[[level]]$graphvertex_attractors[[basinA]]) {
     paths_temp <- all_shortest_paths(graph = C_matrix_graph_object,
                                      from = i,
                                      to = MarkovObject$hierarchicalStructure[[level]]$graphvertex_basins[[basinB]],
@@ -14,10 +14,11 @@ findTransitionPoints = function(MarkovObject = NULL,
                                      weights = E(C_matrix_graph_object)$weight)
     paths <- c(paths, paths_temp[[1]])
   }
-
+  
   shortestPathLength <- Inf
   pathVertex <- NULL
   for (i in 1:length(paths)) {
+    #the minmum continuous number is always exclusive
     pathLength <- distances(C_matrix_graph_object,
                             v=paths[[i]][1],
                             to=paths[[i]][length(paths[[i]])],
