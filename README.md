@@ -8,7 +8,7 @@ Any suggestions and remarks might be addressed to Zhenyi Wang: wangzy17@mails.ts
 MarkovHC: Markov hierarchical clustering for topological structure of high-dimensional single-cell omics data
 
 # Installation  
-* To install, follow the instructions in
+* To install, follow the instructions in [INSTALL.md](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/INSTALL.md)
 
 # Example Code
 
