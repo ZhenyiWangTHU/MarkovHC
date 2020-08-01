@@ -1,4 +1,5 @@
 # MarkovHC
+![Fig. 1](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/images/Fig1.jpg)
 *Author: Zhenyi Wang*  
 Any suggestions and remarks might be addressed to Zhenyi Wang: wangzy17@mails.tsinghua.edu.cn
 
