@@ -14,5 +14,5 @@ MarkovHC: Markov hierarchical clustering for topological structure of high-dimen
 # Example Code
 - To get started, check out the Quick Start Tutorial: ([View]()) ([Download]())
 
-- The full codes of supplementary analysis in [our paper]() are also [available]().
+- The full codes of data analysis in [our paper]() are also [available]().
 
