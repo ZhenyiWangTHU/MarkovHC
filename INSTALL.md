@@ -38,5 +38,5 @@ Because these packages must be installed before installing MarkovHC (otherwise i
 
 *MarkovHC* can be installed directly from the GitHub repository
 
-```library(devtools)```
+```library(devtools)```  
 ```install_github(repo="ZhenyiWangTHU/MarkovHC")```
