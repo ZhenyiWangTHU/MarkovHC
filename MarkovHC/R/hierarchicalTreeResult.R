@@ -6,8 +6,10 @@ getEdges <- function(clusterings=NULL) {
   transitions <- lapply(1:(ncol(clusterings) - 1), function(i) {
 
     # Extract two neighbouring clusterings
-    from.res <- sort(colnames(clusterings))[i]
-    to.res <- sort(colnames(clusterings))[i + 1]
+    #from.res <- sort(colnames(clusterings))[i]
+    #to.res <- sort(colnames(clusterings))[i + 1]
+    from.res <- colnames(clusterings)[i]
+    to.res <- colnames(clusterings)[i + 1]
 
     # Get the cluster names
     from.clusters <- sort(unique(clusterings[, from.res]))
@@ -70,12 +72,12 @@ getNodes <- function(clusterings=NULL) {
   nodes <- clusterings %>%
     tidyr::gather(key = level, value = basin) %>%
     group_by(level, basin) %>%
-    summarise(Size = n()) %>%
-    ungroup() %>%
+    dplyr::summarise(Size = n()) %>%
+    dplyr::ungroup() %>%
     mutate(level = stringr::str_replace(level, "level", "")) %>%
     mutate(level = level, basin = basin) %>%
     mutate(Node = paste0("level", level ,'_', basin))%>%
-    dplyr::select(Node, everything())
+    dplyr::select(Node,everything())
 }
 
 

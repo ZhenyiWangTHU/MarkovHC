@@ -1,4 +1,4 @@
-##Find the transition points between basins
+##Find the transition points/critical points between basins
 #' @export
 findTransitionPoints = function(MarkovObject = NULL,
                                 level = NULL,

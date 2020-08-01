@@ -14,7 +14,7 @@ findTransitionPath = function(MarkovObject = NULL,
                                      weights = E(C_matrix_graph_object)$weight)
     paths <- c(paths, paths_temp[[1]])
   }
-  
+  if(length(paths)==0){return(list())}
   shortestPathLength <- Inf
   pathVertex <- NULL
   for (i in 1:length(paths)) {
@@ -34,5 +34,5 @@ findTransitionPath = function(MarkovObject = NULL,
   for (i in pathVertex) {
     label[MarkovObject$hierarchicalStructure[[1]]$basinPoints[[i]]] <- 1
   }
-  return(label)
+  return(list(label,pathVertex,shortestPathLength))
 }

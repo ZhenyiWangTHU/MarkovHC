@@ -63,8 +63,9 @@ update_P = function(C_matrix_updated=NULL,
   p_updated <- p_updated/rowSums(p_updated)
   p_updated_indice <- p_updated
   diag(p_updated_indice) <- 0
+  C_cut_step <- C_cut
   while((cutpoint==0)|(all(p_updated_indice==0))){
-    C_cut <- C_cut + 0.01
+    C_cut <- C_cut + C_cut_step
     if((C_cut-1)>0){C_cut <- 1}
     cutpoint <- quantile(C_matrix_updated[which(is.infinite(C_matrix_updated)==FALSE)],probs = C_cut)
     p_updated <- C_matrix_updated
@@ -80,7 +81,42 @@ update_P = function(C_matrix_updated=NULL,
   return(list(p_updated, cutpoint))
 }
 
+#Function5:Arrange the coordinate of the hierarchical structure
+arr_coordinate = function(MarkovObject=NULL,
+                          startLevel=NULL,
+                          endLevel=NULL){
+  orderedMarkov <- orderMarkovHC(MarkovObject=MarkovObject,
+                                 MarkovLevels=1:length(MarkovObject[["hierarchicalStructure"]]),
+                                 orderLevels=1:length(MarkovObject[["hierarchicalStructure"]]))
 
+  firstOrder <- unique(orderedMarkov[,startLevel+1])
+  firstCoordinate <- vector(mode = 'integer',length = length(firstOrder))
+  index_temp <- 1
+  for (i in firstOrder) {
+    firstCoordinate[i] <- index_temp
+    index_temp <- index_temp+1
+  }
+  coordinate <- list()
+  coordinate[[1]] <- firstCoordinate
+  coordinateIndex <- 2
+  for (i in (startLevel+1):endLevel) {
+    coordinate_temp <- vector(mode = 'integer',
+                              length = length(MarkovObject[["hierarchicalStructure"]][[paste('level',as.character(i),sep='')]][['basins']]))
+    basinSize <- MarkovObject[["hierarchicalStructure"]][[paste('level',as.character(i-1),sep='')]][['basinPoints']]%>%lengths()
 
+    for (j in 1:length(coordinate_temp)) {
+      basinsIntemp <- MarkovObject[["hierarchicalStructure"]][[paste('level',as.character(i),sep='')]][['basins']][[j]]
+      biggestBasin <- basinsIntemp[which.max(basinSize[basinsIntemp])[1]]
+      coordinate_temp[j] <- coordinate[[coordinateIndex-1]][biggestBasin]
+    }
 
+    coordinate[[coordinateIndex]] <- coordinate_temp
+    coordinateIndex <- coordinateIndex+1
+  }
 
+  for (i in 1:length(coordinate)) {
+    coordinate[[i]] <- cbind(coordinate[[i]],rep((1+0.5*(i-1)),length(coordinate[[i]])))
+  }
+
+  return(coordinate)
+}

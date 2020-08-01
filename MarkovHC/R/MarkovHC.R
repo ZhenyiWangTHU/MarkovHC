@@ -63,7 +63,7 @@ MarkovHC = function(origin_matrix,
                     emphasizedistance=1,
                     weightDist=2,
                     weightDens=0.5,
-                    cutpoint=0.05,
+                    cutpoint=0.01,
                     showprocess=FALSE,
                     bn=2,
                     minBasinSize=0.2,
@@ -531,7 +531,7 @@ MarkovHC = function(origin_matrix,
      }
     }
 
-    #If the basin is small, we regard it as noise adn merge it to the closest basin
+    #If the basin is small, we regard it as noise and merge it to the closest basin
     C_matrix_updated_mergedsmallbasin <- C_matrix_updated
 
     noise_basins <- c()
@@ -565,10 +565,14 @@ MarkovHC = function(origin_matrix,
       }
       #merge noise basins
       for (noise_basins_i in noise_basins) {
+        #this noise_basin is an outlier which cannot reach any other basins
+        #merge it to quilified basins
         if(sum(is.infinite(C_matrix_updated_mergedsmallbasin[noise_basins_i,]))==(nrow(C_matrix_updated))){
           cloest_basin_index <- which(noise_basins_to_qualified_basins[noise_basins_i,]==min(noise_basins_to_qualified_basins[noise_basins_i,]))
           C_matrix_updated_mergedsmallbasin[noise_basins_i,cloest_basin_index] <- row_min[noise_basins_i]
         }else{
+          #this noise_basin is not an outlier
+          #let it merge its cloest basins
           cloest_basin_index <- which(C_matrix_updated_mergedsmallbasin[noise_basins_i,]==min(C_matrix_updated_mergedsmallbasin[noise_basins_i,]))
           C_matrix_updated_mergedsmallbasin[noise_basins_i,cloest_basin_index] <- row_min[noise_basins_i]
         }
@@ -626,6 +630,7 @@ MarkovHC = function(origin_matrix,
         centrality_scores = centrality_scores,
         symmetric_KNN_graph_cluster = symmetric_KNN_graph_cluster,
         transitionMatrix = transitionMatrix,
+        dm_matrix = dm_matrix,
         C_matrix = C_matrix,
         C_matrix_graph_object=C_matrix_graph_object,
         C_matrix_graph_shortest_distance = C_matrix_graph_shortest_distance,

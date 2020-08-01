@@ -20,6 +20,6 @@ orderMarkovHC = function(MarkovObject=NULL,
                  paste('level',., sep='')%>%
                  paste(., collapse = '+')%>%
                  paste('~',., sep = '')
-  result.dataframe <- orderBy(as.formula(orderLevels), result.dataframe)
+  result.dataframe <- doBy::orderBy(as.formula(orderLevels), result.dataframe)
   return(result.dataframe)
 }
