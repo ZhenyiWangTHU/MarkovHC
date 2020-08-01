@@ -4,5 +4,12 @@ Any suggestions and remarks might be addressed to Zhenyi Wang: wangzy17@mails.ts
 
 **MarkovHC** is an open-source R package designed for explore hierarchical structures of biological data, especially in cell type and critical point identification and cell transition tracking in development.
 
-**MarkovHC** is described in:
+**MarkovHC** is described in:  
 MarkovHC: Markov hierarchical clustering for topological structure of high-dimensional single-cell omics data
+
+# Installation  
+* To install, follow the instructions in
+
+# Example Code
+
+# 
