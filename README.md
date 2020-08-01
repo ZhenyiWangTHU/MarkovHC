@@ -12,5 +12,7 @@ MarkovHC: Markov hierarchical clustering for topological structure of high-dimen
 * To install, follow the instructions in [INSTALL.md](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/INSTALL.md)
 
 # Example Code
+- To get started, check out the Quick Start Tutorial: ([View]()) ([Download]())
 
-# 
+- The full codes of supplementary analysis in [our paper]() are also [available]().
+
