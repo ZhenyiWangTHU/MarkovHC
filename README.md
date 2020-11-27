@@ -16,5 +16,5 @@ MarkovHC: Markov hierarchical clustering for the topological structure of high-d
 
 - The codes of data analysis in [our paper](https://www.biorxiv.org/content/10.1101/2020.11.04.368043v1?rss=1) are freely available here.
 
- --1. [Cell Cycle](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/codes%20for%20analysis%20in%20MarkovHC%20paper/cellCycle/cellCycle.md).
+### 1. [Cell Cycle](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/codes%20for%20analysis%20in%20MarkovHC%20paper/cellCycle/cellCycle.md).
 
