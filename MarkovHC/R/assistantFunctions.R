@@ -56,6 +56,8 @@ Calculate_C_Matrix = function(matrix=NULL,
 ##Function4:Update the transition matrix
 update_P = function(C_matrix_updated=NULL,
                     C_cut=NULL){
+  # remove zero We can prove it in the next version!
+  # cutpoint <- quantile(unique(C_matrix_updated[which(is.infinite(C_matrix_updated)==FALSE)]),probs = C_cut)
   cutpoint <- quantile(C_matrix_updated[which(is.infinite(C_matrix_updated)==FALSE)],probs = C_cut)
   p_updated <- C_matrix_updated
   p_updated[which(C_matrix_updated>cutpoint)] <- 0
@@ -67,6 +69,8 @@ update_P = function(C_matrix_updated=NULL,
   while((cutpoint==0)|(all(p_updated_indice==0))){
     C_cut <- C_cut + C_cut_step
     if((C_cut-1)>0){C_cut <- 1}
+    #  remove zero We can prove it in the next version!
+    #  cutpoint <- quantile(unique(C_matrix_updated[which(is.infinite(C_matrix_updated)==FALSE)]),probs = C_cut)
     cutpoint <- quantile(C_matrix_updated[which(is.infinite(C_matrix_updated)==FALSE)],probs = C_cut)
     p_updated <- C_matrix_updated
     p_updated[which(C_matrix_updated>cutpoint)] <- 0

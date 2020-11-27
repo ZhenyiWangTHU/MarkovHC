@@ -33,7 +33,7 @@ if (requireNamespace("devtools", quietly = TRUE)) {
   devtools::install_github(repo="ZhenyiWangTHU/MarkovHC")
 }
 
-# Check that URD installed.
+# Check that MarkovHC installed.
 if (requireNamespace("MarkovHC", quietly = TRUE)) {
   message("MarkovHC installed successfully!")
   message('You can load it by typing: library("MarkovHC")')
