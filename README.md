@@ -12,7 +12,7 @@ MarkovHC: Markov hierarchical clustering for the topological structure of high-d
 * To install, follow the instructions in [INSTALL.md](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/INSTALL.md)
 
 # Example Code
-- To get started, check out the Quick Start Tutorial: ([View]())
+- To get started, check out the Quick Start Tutorial: ([View](https://github.com/ZhenyiWangTHU/MarkovHC/blob/master/codes%20for%20analysis%20in%20MarkovHC%20paper/gastric_cancer_walkthrough/gastric_cancer.md))
 
 - The codes of data analysis in [our paper](https://www.biorxiv.org/content/10.1101/2020.11.04.368043v1?rss=1) are freely available below:   
    1. [Figure2](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure2)
