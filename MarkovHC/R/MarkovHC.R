@@ -39,6 +39,8 @@
 #' intermediate information.Default is FALSE.
 #' @param bn A numeric parameter indicates the power of the Minkowski distance.
 #' Default is 2.
+#' @param verbose A Bloolean parameter indicates wether to print details when run
+#'  the program.
 # #' @param stop_rate A numeric parameter indicating a stopping criterion that
 # #' if the number of samples belonging to qualified clusters exceeds
 # #' \code{stop_rate*num_data}on this level, then the algorithm will stop and
@@ -68,7 +70,8 @@ MarkovHC = function(origin_matrix,
                     bn=2,
                     minBasinSize=0.2,
                     #smallBasinSize=3,
-                    noiseBasinSize=10
+                    noiseBasinSize=10,
+                    verbose = TRUE
                     ){
   ##step01.check the input parameters------------------------------------------
   #origin_matrix
@@ -394,7 +397,8 @@ MarkovHC = function(origin_matrix,
                                                        weighted = TRUE,
                                                        diag = TRUE)
   #step04.3 Calculate the shortest distance between each vertex pair in the graph
-  print('Calculate the shortest distance between each vertex pair in the graph.')
+  if(verbose == TRUE){print('Calculate the shortest distance between each vertex pair in the graph.')}
+
   C_matrix_graph_shortest_distance <- matrix(data = 0, nrow = nrow(C_matrix), ncol = nrow(C_matrix))
   for (i in 1:nrow(C_matrix)) {
     for (j in 1:nrow(C_matrix)) {
@@ -437,10 +441,12 @@ MarkovHC = function(origin_matrix,
                        basinNum=basinNum)
   MarkovHC_result <- append(MarkovHC_result, list(level_result))
   levels_indice <- 1
-  print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))
+  if(verbose == TRUE){print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))}
+
   while (TRUE) {
     levels_indice <- levels_indice + 1
-    print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))
+    if(verbose == TRUE){print(paste('Build the level ',as.character(levels_indice),'...', sep = ''))}
+
     ##step05.1 find basins and attractors
     RS_vector <- judge_RS(P=P_updated)
 
@@ -459,7 +465,8 @@ MarkovHC = function(origin_matrix,
     attractor_indice <- 1
     while(TRUE){
      if(all(processed_attractors==1)){break}
-     print(paste('Find attractors in the basin ',as.character(attractor_indice),'.', sep = ''))
+     if(verbose == TRUE){print(paste('Find attractors in the basin ',as.character(attractor_indice),'.', sep = ''))}
+
      attractor_temp <- which(processed_attractors==0)[1]
      #processed_attractors[attractor_temp] <- 1
      # P_updated_graph_sparse <- as(as.matrix(P_updated), "dgCMatrix")%>%Matrix::summary()%>%as.data.frame()
@@ -496,7 +503,8 @@ MarkovHC = function(origin_matrix,
     basinNum <- length(basins)
     basin_indice <- 1
     for (i in 1:basinNum){
-        print(paste('Partition the basin ',as.character(basin_indice),'.', sep = ''))
+        if(verbose == TRUE){print(paste('Partition the basin ',as.character(basin_indice),'.', sep = ''))}
+
         #assign attractor points
         attractorPoints_temp <- level_result$attractorPoints[attractors[[i]]]%>%unlist()%>%unique()
         attractorPoints <- c(attractorPoints, list(attractorPoints_temp))
@@ -513,7 +521,8 @@ MarkovHC = function(origin_matrix,
     }
 
     ##step05.5 update the pseudo energy matrix
-    print('Update the pseudo energy matrix.')
+    if(verbose == TRUE){print('Update the pseudo energy matrix.')}
+
     C_matrix_updated <- matrix(data = 0, nrow = basinNum, ncol = basinNum)
     #for (i in 1:basinNum) {
     #  for (j in 1:basinNum) {
@@ -561,7 +570,8 @@ MarkovHC = function(origin_matrix,
 
     #modify energy matrix
     if((max_basin_size/nrow(transformed_matrix))>=minBasinSize){
-      print('Merge noise basins to qualified basins.')
+      if(verbose == TRUE){print('Merge noise basins to qualified basins.')}
+
       row_min <- apply(C_matrix_updated_mergedsmallbasin, 1, min)
       #let them cannot be recurrent
       for (noise_basins_i in noise_basins) {
@@ -591,7 +601,8 @@ MarkovHC = function(origin_matrix,
     C_matrix_updated_indice <- C_matrix_updated_mergedsmallbasin
     diag(C_matrix_updated_indice) <- Inf
     if((basinNum>1)&(all(is.infinite(C_matrix_updated_indice))==FALSE)){
-      print('Update the transition probability matrix.')
+      if(verbose == TRUE){print('Update the transition probability matrix.')}
+
       update_P_result <- update_P(C_matrix_updated=C_matrix_updated_mergedsmallbasin, C_cut=cutpoint)
       P_updated <- update_P_result[[1]]
       energyCutpoint <- update_P_result[[2]]
@@ -635,10 +646,15 @@ MarkovHC = function(origin_matrix,
       #The sequence of C_cut
       #do not minus 0.1 in the next version!
       C_cut_seq <- c()
+
       for(i in 2:length(MarkovHC_result)){
         C_cut_seq <- c(C_cut_seq, MarkovHC_result[[i]][["energyCutpoint"]])
       }
-      C_cut_seq[which(C_cut_seq<0.1)] <- C_cut_seq[which(C_cut_seq<0.1)-1]
+
+      while (length(which(C_cut_seq<0.1))>0) {
+        C_cut_seq[which(C_cut_seq<0.1)] <- C_cut_seq[which(C_cut_seq<0.1)-1]
+      }
+
       C_cut_seq <- C_cut_seq
       C_cut_seq <- c(0.1, C_cut_seq)
 
