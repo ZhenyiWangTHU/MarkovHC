@@ -63,6 +63,12 @@ plotHierarchicalStructure = function(MarkovObject=NULL,
     arrangedColorVector <- arrangedColorVector$color
     colnames(nodesPosition) <- c('x','y')
 
+    #for [Package ggraph version 2.0.2 ]
+    #ggraph(graph,
+    #       layout = "manual",
+    #       x=nodesPosition[,1],
+    #       y=nodesPosition[,2],
+    #       circular = FALSE)
     ggraph(graph,
            layout = "manual",
            node.positions=nodesPosition,

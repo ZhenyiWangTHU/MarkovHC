@@ -7,7 +7,7 @@ library(dplyr)
 library(MASS)
 library(ggplot2)
 
-data("helix_data")
+data("helix_data", package = "MarkovHC")
 ```
 
 

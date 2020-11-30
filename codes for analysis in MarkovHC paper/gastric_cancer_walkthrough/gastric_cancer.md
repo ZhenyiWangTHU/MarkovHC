@@ -260,10 +260,20 @@ setwd('/data02/zywang/MarkovHC/gastric_cancer')
 
 # 2. load the environment which contains data
 
+### This Seurat object can be downloaded from 
+
+https://cloud.tsinghua.edu.cn/f/6f8d7b6af6a04252abd4/?dl=1
+
 
 ```R
-dt_sub <- readRDS('/data02/zywang/MarkovHC/gastric_cancer/gastric_cancer_seuratObject.RData')
+dt_sub <- readRDS('/data02/zywang/MarkovHC/gastric_cancer/gastric_cancer_seuratObject.Rds')
 ```
+
+    Registered S3 method overwritten by 'spatstat':
+      method     from
+      print.boxx cli 
+    
+
 
 
 ```R
@@ -348,7 +358,7 @@ dt_sub2
 
 
 
-![png](output_13_1.png)
+![png](output_14_1.png)
 
 
 
@@ -371,7 +381,7 @@ ElbowPlot(dt_sub,ndims = 50)
 ```
 
 
-![png](output_16_0.png)
+![png](output_17_0.png)
 
 
 
@@ -389,7 +399,7 @@ DimPlot(dt_sub, reduction = "umap", label = TRUE,label.size=10,dims = c(1, 2), g
 ```
 
 
-![png](output_19_0.png)
+![png](output_20_0.png)
 
 
 
@@ -6403,7 +6413,7 @@ ggplot(C_cut_seq, aes(x=level, y=C_cut_seq))+ geom_point(size=1,shape=19)+mythem
 ```
 
 
-![png](output_30_0.png)
+![png](output_31_0.png)
 
 
 # 8. extract labels on each level
@@ -6433,7 +6443,7 @@ DimPlot(dt_sub, reduction = "umap", group.by = 'basins',label=T,pt.size=1, label
 ```
 
 
-![png](output_34_0.png)
+![png](output_35_0.png)
 
 
 
@@ -6463,7 +6473,7 @@ ggplot(data=layout, mapping =  aes(x=UMAP_1, y=UMAP_2)) +
 ```
 
 
-![png](output_37_0.png)
+![png](output_38_0.png)
 
 
 ### plot basins on level 18
@@ -6485,7 +6495,7 @@ DimPlot(dt_sub, reduction = "umap", group.by = 'basins',label=T,pt.size=1, label
 ```
 
 
-![png](output_39_0.png)
+![png](output_40_0.png)
 
 
 
@@ -6515,7 +6525,7 @@ ggplot(data=layout, mapping =  aes(x=UMAP_1, y=UMAP_2)) +
 ```
 
 
-![png](output_41_0.png)
+![png](output_42_0.png)
 
 
 # 9. track stepwise Paths
@@ -6560,7 +6570,7 @@ pheatmap::pheatmap(as.matrix(pathLength), cluster_rows = F, cluster_cols =F,
 ```
 
 
-![png](output_45_0.png)
+![png](output_46_0.png)
 
 
 ### track path points (pp), attractor points (ap) and critical points (cp) on each path
@@ -6610,7 +6620,7 @@ DimPlot(dt_sub, reduction = "umap", group.by = 'basins',label=T,pt.size=3, label
 ```
 
 
-![png](output_52_0.png)
+![png](output_53_0.png)
 
 
 
@@ -6672,7 +6682,7 @@ ggplot(data=bp, mapping =  aes(x=UMAP_1, y=UMAP_2)) +
 ```
 
 
-![png](output_55_0.png)
+![png](output_56_0.png)
 
 
 
@@ -6727,7 +6737,7 @@ DoHeatmap(dt_sub, features = markerstop50$gene) + NoLegend()
 ```
 
 
-![png](output_62_0.png)
+![png](output_63_0.png)
 
 
 
@@ -6821,7 +6831,7 @@ pheatmap(as.matrix(ordered_genes_expression_matrix), cluster_rows = F, cluster_c
 ```
 
 
-![png](output_70_0.png)
+![png](output_71_0.png)
 
 
 # 11. GO for each differentially expressed gene sets
@@ -6924,7 +6934,7 @@ path_pheatmap <- plot_pseudotime_heatmap(path_object[path_sig_gene_names,],
 ```
 
 
-![png](output_78_0.png)
+![png](output_79_0.png)
 
 
 
@@ -6987,7 +6997,7 @@ Pathpoint214.pdf <- plot_pseudotime_heatmap(path_object[orderedGenes,],
 ```
 
 
-![png](output_84_0.png)
+![png](output_85_0.png)
 
 
 
@@ -7515,7 +7525,7 @@ path_pheatmap <- plot_pseudotime_heatmap(path_object[path_sig_gene_names,],
 ```
 
 
-![png](output_98_0.png)
+![png](output_99_0.png)
 
 
 
@@ -7574,7 +7584,7 @@ Pathpoint253.pdf <- plot_pseudotime_heatmap(path_object[orderedGenes,],
 ```
 
 
-![png](output_103_0.png)
+![png](output_104_0.png)
 
 
 
@@ -8166,5 +8176,5 @@ FeaturePlot(dt_sub, features = c("OLFM4", "EPHB2", "SOX9",
 ```
 
 
-![png](output_121_0.png)
+![png](output_122_0.png)
 

@@ -16,36 +16,14 @@ library(rgl)
 library(plot3D)
 ```
 
-# generate simulation data
+
+```R
+data(example_3D2, package = "MarkovHC")
+```
 
 
 ```R
-#two basins have high density
-example4 <- mvrnorm(n=1000, mu=c(10,10,10), Sigma=matrix(c(10,0,0,0,10,0,0,0,10),3,3))%>%as.data.frame()
-
-example4 <- rbind(example4,
-                  mvrnorm(n=1000, mu=c(50,10,10), Sigma=matrix(c(10,0,0,0,10,0,0,0,10),3,3)))
-
-example4 <- rbind(example4,
-                  cbind(runif(n= 50 ,min = 10, max = 27),
-                        runif(n= 50 ,min = 10, max = 10),
-                        runif(n= 50 ,min = 10, max = 10)))
-
-example4 <- rbind(example4,
-                  cbind(runif(n= 50 ,min = 32, max = 50),
-                        runif(n= 50 ,min = 10, max = 10),
-                        runif(n= 50 ,min = 10, max = 10)))
-#usethis::use_data(example4,overwrite = FALSE)
-
-scatter3d(x=example4[,1],
-          y=example4[,2], 
-          z=example4[,3],
-          point.col='black',
-          pch = 21,
-          sphere.size=2,
-          surface=FALSE,
-          xlab = "X", ylab = "Y",
-          zlab = "Z", axis.scales = FALSE)
+example4 <- example_3D2
 ```
 
 # run MarkovHC

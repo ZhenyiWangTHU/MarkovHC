@@ -61,49 +61,14 @@ mytheme <-  theme(panel.grid.major =element_blank(),
                                      face="bold",hjust=0.5,lineheight=0.5,vjust=0.5))
 ```
 
-# generate simulation data
-
 
 ```R
-#star
-example6 <- mvrnorm(n=200, mu=c(10,10), Sigma=matrix(c(5,4.5,4.5,5),2,2))%>%as.data.frame()
-example6 <- rbind(example6,
-                   mvrnorm(n=200, mu=c(10,10), Sigma=matrix(c(5,-4.5,-4.5,5),2,2)))
-example6 <- rbind(example6,
-                  mvrnorm(n=200, mu=c(10,10), Sigma=matrix(c(1,0,0,1),2,2)))
-#top right Gaussian 
-example6 <- rbind(example6,
-                   mvrnorm(n=200, mu=c(25,25), Sigma=matrix(c(2,0,0,2),2,2)))
-example6 <- rbind(example6,
-                  mvrnorm(n=200, mu=c(25,25), Sigma=matrix(c(0.5,0,0,0.5),2,2)))
-#low right Gaussian
-example6 <- rbind(example6,
-                   mvrnorm(n=30, mu=c(25,10), Sigma=matrix(c(3,0,0,3),2,2)))
-example6 <- rbind(example6,
-                  mvrnorm(n=50, mu=c(25,10), Sigma=matrix(c(0.1,0,0,0.1),2,2)))
-#top left Gaussian
-example6 <- rbind(example6,
-                   mvrnorm(n=300, mu=c(7.5,25), Sigma=matrix(c(1,0,0,1),2,2)))
-example6 <- rbind(example6,
-                  mvrnorm(n=300, mu=c(13,25), Sigma=matrix(c(1,0,0,1),2,2)))
-example6 <- rbind(example6,
-                  mvrnorm(n=300, mu=c(10,21), Sigma=matrix(c(1,0,0,1),2,2)))
-example6 <- rbind(example6,
-                   cbind(runif(n= 20 ,min = 14, max = 18),runif(n= 20 ,min = 25, max = 25)))
-example6 <- rbind(example6,
-                  cbind(runif(n= 20 ,min = 19, max = 23),runif(n= 20 ,min = 25, max = 25)))
-plot(example6)
-example6 <- example6[example6[,1]>0,]
+data(example_2D1,package = 'MarkovHC')
 ```
 
 
 ```R
-pdf(file = './ContourAndDensity.pdf', width = 3.5, height = 3.5)
-p1 + stat_density_2d(aes(fill = stat(level)), geom = "polygon",
-                    h=3,
-                    bins = 50,contour=TRUE,alpha=0.001
-                    )+scale_fill_gradientn(colours=c(alpha("#252525",0.001)))+mytheme+ theme(legend.position = "none")
-dev.off()
+example6 <- example_2D1
 ```
 
 # Run MarkovHC

@@ -11,18 +11,16 @@ library(rgl)
 library(MarkovHC)
 options(rgl.useNULL=FALSE)
 # Linear paths
-params.groups <- newSplatParams(batchCells = 1000, 
-                                nGenes = 5000,
-                                group.prob = c(0.35, 0.3,0.35),
-                                de.prob = 0.5, de.facLoc = 0.2,
-                                path.from = c(0, 1, 2),
-                                path.skew = c(1,0,0),
-                                path.length = c(10,10,10))
-sim2Object <- splatSimulatePaths(params.groups,verbose = FALSE)
-sim2 <- scater::normalize(sim2Object)
-sim2_plot <- scater::plotPCA(sim2, colour_by = "Group") + ggtitle("Linear paths")
-sim2_plot
-mat2<-counts(sim2Object)
+```
+
+
+```R
+data(splatter_mat, package = "MarkovHC")
+```
+
+
+```R
+mat2 <- splatter_mat
 ```
 
 

@@ -16,56 +16,121 @@ library(rgl)
 library(plot3D)
 ```
 
-# generate simulation data
+    
+    Attaching package: ‘dplyr’
+    
+    
+    The following objects are masked from ‘package:stats’:
+    
+        filter, lag
+    
+    
+    The following objects are masked from ‘package:base’:
+    
+        intersect, setdiff, setequal, union
+    
+    
+    Loading required package: carData
+    
+    
+    Attaching package: ‘car’
+    
+    
+    The following object is masked from ‘package:dplyr’:
+    
+        recode
+    
+    
+    
+    Attaching package: ‘MASS’
+    
+    
+    The following object is masked from ‘package:dplyr’:
+    
+        select
+    
+    
+    Loading required package: parallel
+    
+    Loading required package: doParallel
+    
+    Loading required package: foreach
+    
+    Loading required package: iterators
+    
+    Loading required package: dbscan
+    
+    Loading required package: igraph
+    
+    
+    Attaching package: ‘igraph’
+    
+    
+    The following objects are masked from ‘package:dplyr’:
+    
+        as_data_frame, groups, union
+    
+    
+    The following objects are masked from ‘package:stats’:
+    
+        decompose, spectrum
+    
+    
+    The following object is masked from ‘package:base’:
+    
+        union
+    
+    
+    Loading required package: Matrix
+    
+    Loading required package: Rcpp
+    
+    Loading required package: plyr
+    
+    ------------------------------------------------------------------------------
+    
+    You have loaded plyr after dplyr - this is likely to cause problems.
+    If you need functions from both plyr and dplyr, please load plyr first, then dplyr:
+    library(plyr); library(dplyr)
+    
+    ------------------------------------------------------------------------------
+    
+    
+    Attaching package: ‘plyr’
+    
+    
+    The following objects are masked from ‘package:dplyr’:
+    
+        arrange, count, desc, failwith, id, mutate, rename, summarise,
+        summarize
+    
+    
+    Loading required package: doBy
+    
+    Loading required package: ggraph
+    
+    Loading required package: ggplot2
+    
+    Loading required package: viridisLite
+    
+
+
+
+    Error in library(alluvial): there is no package called ‘alluvial’
+    Traceback:
+
+
+    1. library(alluvial)
+
 
 
 ```R
-example5 <- mvrnorm(n=100, mu=c(10,10,10), Sigma=matrix(c(5,0,0,0,5,0,0,0,5),3,3))%>%as.data.frame()
-example5 <- rbind(example5,
-                  mvrnorm(n=100, mu=c(50,10,10), Sigma=matrix(c(5,0,0,0,5,0,0,0,5),3,3)))
-example5 <- rbind(example5,
-                  mvrnorm(n=30, mu=c(10,10,10), Sigma=matrix(c(0.1,0,0,0,0.1,0,0,0,0.1),3,3)))
-example5 <- rbind(example5,
-                  mvrnorm(n=30, mu=c(50,10,10), Sigma=matrix(c(0.1,0,0,0,0.1,0,0,0,0.1),3,3)))
-                     runif(n= 2 ,min = 10, max = 10)))
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 17, max = 17),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 20, max = 20),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 25, max = 25),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
-
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 34, max = 34),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 39, max = 39),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
-example5 <- rbind(example5,
-                  cbind(runif(n= 1 ,min = 42, max = 42),
-                        runif(n= 1 ,min = 10, max = 10),
-                        runif(n= 1 ,min = 10, max = 10)))
+data("example_3D1",package="MarkovHC")
 ```
 
 
 ```R
-scatter3d(x=example5[,1],
-          y=example5[,2], 
-          z=example5[,3],
-          point.col='black',
-          pch = 21,
-          sphere.size=1,
-          surface=FALSE,
-          xlab = "X", ylab = "Y",
-          zlab = "Z", axis.scales = FALSE)
+example5 <- example_3D1
 ```
 
 # run MarkovHC
