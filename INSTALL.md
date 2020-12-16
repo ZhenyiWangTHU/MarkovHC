@@ -42,4 +42,5 @@ Because these packages must be installed before installing MarkovHC (otherwise i
 ```install_github(repo="ZhenyiWangTHU/MarkovHC")```
 
 Or download MarkovHC_1.0.0.tar.gz and install in R
+
 ```install.packages('MarkovHC_1.0.0.tar.gz')```
