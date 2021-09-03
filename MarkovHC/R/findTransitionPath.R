@@ -1,4 +1,25 @@
-##Find the transition path from basinA to basinB
+#' Find the transition path from basinA to basinB
+#'
+#' Function \code{findTransitionPath} The function finds the samples on the
+#' transition path from basinA to basinB.
+#' @param MarkovObject The output of the function, \code{MarkovHC}.
+#' @param level An integer value indicates the customized level.
+#' @param basinA An integer value indicates the customized "from" basin.
+#' @param basinB An integer value indicates the cusomized "to" basin.
+#' @details The function finds the samples on the transition path from basinA to basinB on
+#' the customized level.
+#' @return  This function returns a list consists of three components:
+#' label is a vector, the indices of 1 in this vector indicate the samples on the transition
+#' path.
+#'
+#' pathVertex is the vector contains indices of base-clusters on the transition path. If the
+#' dobasecluster parameter of \code{MarkovHC} was set to FALSE, pathVertex contains the sample
+#' indices. If the dobasecluster parameter in \code{MarkovHC} was set to TRUE, pathVertex
+#' contains the indices of clusters on level 1.
+#'
+#' shortestPathLength is pseudo energy cost from basinA to basinB.
+#'
+#' @author Zhenyi Wang wangzy17@mails.tsinghua.edu.cn
 #' @export
 findTransitionPath = function(MarkovObject = NULL,
                               level = NULL,
@@ -14,6 +35,7 @@ findTransitionPath = function(MarkovObject = NULL,
                                      weights = E(C_matrix_graph_object)$weight)
     paths <- c(paths, paths_temp[[1]])
   }
+
   if(length(paths)==0){return(list())}
   shortestPathLength <- Inf
   pathVertex <- NULL

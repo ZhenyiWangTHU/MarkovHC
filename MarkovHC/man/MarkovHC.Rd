@@ -4,79 +4,54 @@
 \alias{MarkovHC}
 \title{Markov Hierarchical Clustering Algorithm}
 \usage{
-MarkovHC(origin_matrix, minrt = 50, transformtype = "none", KNN = 20,
-  basecluster = "clique", dobasecluster = FALSE,
-  baseclusternum = NULL, emphasizedistance = 1, weightDist = 2,
-  weightDens = 0.5, cutpoint = 0.05, showprocess = FALSE, bn = 2,
-  stop_rate = 1)
+MarkovHC(
+  MarkovHC_input = NULL,
+  SNNslot = NULL,
+  KNNslot = NULL,
+  KNN = 20,
+  dobasecluster = TRUE,
+  cutpoint = 0.001,
+  verbose = TRUE
+)
 }
 \arguments{
-\item{origin_matrix}{A matrix or a dataframe with row names and column names.
+\item{MarkovHC_input}{A Seurat object (recommend) or a matrix/dataframe with row names and column names.
 Each row should be a feature and each column should be a sample.}
 
-\item{minrt}{A parameter helping to judge whether a group of samples is a
-qualified cluster. If we assume that we have \code{tol_num} samples in
-total, then a qualified cluster should be of size larger than
-\code{tol_num/minrt}. Default is 50.}
+\item{SNNslot}{A character vector indicates the name of the SNN graph slot in the seurat object. If the MarkovHC_input
+is a matrix, this parameter will be ignored.}
 
-\item{transformtype}{A character parameter indicating what kind of
-tranformation('arsinh' or 'none')would be applied to the original matrix.
-Default is 'none'.}
+\item{KNNslot}{A character vector indicates the name of the KNN graph slot in the seurat object. If the MarkovHC_input
+is a matrix, this parameter will be ignored.}
 
-\item{KNN}{A interger indicates the number of neighbors in building the
-KNN graph. Default is 20.}
+\item{KNN}{An interger indicates the number of neighbors in building the
+KNN graph. Default is 20. If the MarkovHC_input is a Seurat object, the KNN
+parameter will be set as that in the Seurat object.}
 
-\item{basecluster}{A character parameter indicating what kind of simple
-clustering methods would be used as a preliminary processinng method.
-Available choices include \code{clique}, \code{single}, \code{complete},
-\code{average} and \code{kmeans}. Default is 'clique'.}
-
-\item{dobasecluster}{A Bloolean parameter indicates wether to do clustering
-on the first level. Default is FALSE.}
-
-\item{baseclusternum}{A integer indicates the number of clusters on the
-first level. This parameter is useful only when the parameter
-'dobasecluster' is TRUE. Default is a tenth of the number of samples.}
-
-\item{emphasizedistance}{A integer indicates the power of element in
-the C matrix, bigger the emphasizdistance, more likely to detect
-elongated clusters. Default is 1. More details please refer to the article.}
-
-\item{weightDist}{A numeric parameter indicates the power of distance.
-Default is 2.}
-
-\item{weightDens}{A numeric parameter indicates the power of density.
-Default is 0.5.}
+\item{dobasecluster}{A Bloolean parameter indicates wether to do Louvain clustering
+on the first level. Default is TRUE.}
 
 \item{cutpoint}{A numeric value in [0,1] indicates the threshold of
-the quantile of pseudo energy, default is 0.05.}
+the quantile of pseudo energy, default is 0.001.}
 
-\item{showprocess}{A Boolean parameter indicating whether to print
-intermediate information.Default is FALSE.}
-
-\item{bn}{A numeric parameter indicates the power of the Minkowski distance.
-Default is 2.}
-
-\item{stop_rate}{A numeric parameter indicating a stopping criterion that
-if the number of samples belonging to qualified clusters exceeds
-\code{stop_rate*num_data}on this level, then the algorithm will stop and
-not bulid the higher hierachical structure. Default is 1.}
+\item{verbose}{A Bloolean parameter indicates wether to print details when run
+the program.}
 }
 \value{
-This function returns a list including the input parameters, some
-intermedia results and the hierarchical structure. The list includes the
-following components:
+This function returns a list including three components, hierarchicalStructure, inputParameters,
+and midResults, which are the hierarchical clustering results, the input parameters, and some intermediate results.
 }
 \description{
 Function \code{MarkovHC} The main function of MarkovHC, which applies Markov
-Hierarchical Clustering Algorithm to the given data (a dataframe or a matrix).
+Hierarchical Clustering Algorithm to the given data (a Seurat object or a
+matrix/dataframe).
 }
 \details{
-The data given by \code{origin_matrix} will be clustered by using
+The data given by \code{MarkovHC_input} will be clustered by using
 the Markov Hierarchical Clustering Algorithm, which generates a hierarchical
 structure based on the metastability of exponentially perturbed Markov chain.
 More details of the algorithm please refer to the article.
 }
 \author{
-Zhenyi Wang
+Zhenyi Wang wangzy17@mails.tsinghua.edu.cn
 }
