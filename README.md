@@ -20,7 +20,5 @@ Any suggestions and remarks might be addressed to Zhenyi Wang: wangzy17@mails.ts
    1. [Figure2](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure2)
    2. [Figure3](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure3)
    3. [Figure4](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure4)
-   4. [Figure5](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure5)
-   5. [Figure6](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/Figure6)
-   6. [Supplementary Figures](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/SupplementaryFigures).
+   4. [Supplementary Figures](https://github.com/ZhenyiWangTHU/MarkovHC/tree/master/codes%20for%20analysis%20in%20MarkovHC%20paper/SupplementaryFigures).
 
