@@ -25,12 +25,12 @@ if (!requireNamespace("ggraph", quietly = TRUE)) {stop("Failed to install requir
 # Install MarkovHC (and devtools, if necessary)
 if (requireNamespace("devtools", quietly = TRUE)) {
   message("Installing MarkovHC")
-  devtools::install_github(repo="ZhenyiWangTHU/MarkovHC")
+  devtools::install_github(repo="ZhenyiWangTHU/MarkovHC",subdir = "/MarkovHC")
 } else {
   message("Installing devtools")
   install.packages("devtools")
   message("Installing MarkovHC")
-  devtools::install_github(repo="ZhenyiWangTHU/MarkovHC")
+  devtools::install_github(repo="ZhenyiWangTHU/MarkovHC",subdir = "/MarkovHC")
 }
 
 # Check that MarkovHC installed.
