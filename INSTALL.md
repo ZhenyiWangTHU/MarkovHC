@@ -32,7 +32,7 @@ If something went wrong previously, you may have try installing some of MarkovHC
 
 Because these packages must be installed before installing MarkovHC (otherwise its installation will fail.)
 
-``` install.packages(c("parallel", "doParallel", "dbscan", "igraph", "Matrix", "Rcpp", "plyr", "dplyr", "doBy", "ggraph"))```
+``` install.packages(setdiff(c("parallel", "doParallel", "dbscan", "igraph", "Matrix", "Rcpp", "plyr", "dplyr", "doBy", "ggraph"), .packages(all.available=T)))```
      
 ###### C. Install MarkovHC
 
