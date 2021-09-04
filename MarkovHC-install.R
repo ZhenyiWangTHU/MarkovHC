@@ -7,7 +7,7 @@ if (as.numeric(R.version$major) <= 3 && as.numeric(R.version$minor) < 5) {
 } else {
   # R >= 3.5
   message("Installing required packages from cran.")
-  install.packages(c("parallel", "doParallel", "dbscan", "igraph", "Matrix", "Rcpp", "plyr", "dplyr", "doBy", "ggraph"))
+  install.packages(setdiff(c("parallel", "doParallel", "dbscan", "igraph", "Matrix", "Rcpp", "plyr", "dplyr", "doBy", "ggraph"), .packages(all.available=T)))
 }
 
 # Check that packages installation went smoothly.
