@@ -1,5 +1,10 @@
 ```R
-matrix <- read.table(file = '/data02/zywang/MarkovHC/DC3/GSE107651_scATAC-seq_RA_D4.txt', sep='\t', header = T)
+setwd('/data02/zywang/MarkovHC/supplementaryFigures/DC3(scATACSeq+scRNASeq)/')
+```
+
+
+```R
+matrix <- read.table(file = './GSE107651_scATAC-seq_RA_D4.txt', sep='\t', header = T)
 ```
 
 
@@ -49,7 +54,7 @@ dim(matrix)
 .list-inline>li {display: inline-block}
 .list-inline>li:not(:last-child)::after {content: "\00b7"; padding: 0 .5ex}
 </style>
-<ol class=list-inline><li>105095</li><li>96</li></ol>
+<ol class=list-inline><li>105095</li><li>99</li></ol>
 
 
 
@@ -108,12 +113,12 @@ head(matrix)
 
 
 ```R
-write.table(matrix, file='/data02/zywang/MarkovHC/DC3/GSE107651_scATAC-seq_RA_D4_clean.txt', quote = FALSE, row.names = T, col.names = T)
+write.table(matrix, file='./GSE107651_scATAC-seq_RA_D4_clean.txt', quote = FALSE, row.names = T, col.names = T)
 ```
 
 
 ```R
-RNAmatrix <- read.table(file = '/data02/zywang/MarkovHC/DC3/GSE115968_scRNA-seq_RA_D4.txt/GSE115968_scRNA-seq_RA_D4.txt', header = T)
+RNAmatrix <- read.table(file = './GSE115968_scRNA-seq_RA_D4.txt', header = T)
 ```
 
 
@@ -193,7 +198,7 @@ RNAmatrix <- RNAmatrix[,2:ncol(RNAmatrix)]
 
 
 ```R
-write.table(RNAmatrix, file='/data02/zywang/MarkovHC/DC3/GSE115968_scRNA-seq_RA_D4_clean.txt', quote = FALSE, row.names = T, col.names = T)
+write.table(RNAmatrix, file='./GSE115968_scRNA-seq_RA_D4_clean.txt', quote = FALSE, row.names = T, col.names = T)
 ```
 
 

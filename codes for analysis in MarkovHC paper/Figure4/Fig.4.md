@@ -459,6 +459,8 @@ dt_sub <- FindNeighbors(object = dt_sub,
 ```R
 MarkovHC_dt <- MarkovHC(dt_sub,
                         dobasecluster = TRUE,
+                        SNNslot = 'RNA_snn', 
+                        KNNslot = 'RNA_nn',
                         cutpoint = 0.001,
                         verbose = FALSE)
 ```

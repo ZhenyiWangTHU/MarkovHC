@@ -282,6 +282,8 @@ ESCobject <- FindNeighbors(object = ESCobject,
 ```R
 MarkovHC_ESCobject <- MarkovHC(ESCobject,
                                dobasecluster = TRUE,
+                               SNNslot = 'RNA_snn', 
+                               KNNslot = 'RNA_nn',
                                cutpoint = 0.001,
                                verbose = FALSE)
 ```

@@ -317,6 +317,8 @@ DimPlot(pbmc33kobject, reduction = "umap", group.by = 'cellTypes',label=TRUE,pt.
 ```R
 MarkovHC_pbmc33kobject <- MarkovHC(MarkovHC_input = pbmc33kobject,
                                            dobasecluster = TRUE,
+                                           SNNslot = 'RNA_snn', 
+                                           KNNslot = 'RNA_nn',
                                            cutpoint = 0.001,
                                            verbose = FALSE)
 ```

@@ -1,6 +1,12 @@
 ```python
 import numpy as np
 import pandas as pd
+import os
+```
+
+
+```python
+os.chdir('/data02/zywang/MarkovHC/supplementaryFigures/DC3(scATACSeq+scRNASeq)/')
 ```
 
 
@@ -22,7 +28,7 @@ def quantileNormalize(df_input):
 
 
 ```python
-E = pd.read_csv('/data02/zywang/MarkovHC/DC3/GSE107651_scATAC-seq_RA_D4_clean.txt',sep=' ',header=0)
+E = pd.read_csv('./GSE107651_scATAC-seq_RA_D4_clean.txt',sep=' ',header=0)
 E = pd.DataFrame(E)
 ```
 
@@ -33,7 +39,7 @@ E = quantileNormalize(E)
 
 
 ```python
-RNA = pd.read_csv('/data02/zywang/MarkovHC/DC3/GSE115968_scRNA-seq_RA_D4_clean.txt',sep=' ',header=0)
+RNA = pd.read_csv('./GSE115968_scRNA-seq_RA_D4_clean.txt',sep=' ',header=0)
 RNA = pd.DataFrame(RNA)
 ```
 
@@ -44,8 +50,8 @@ RNA = quantileNormalize(RNA)
 
 
 ```python
-RNA.to_csv("/data02/zywang/MarkovHC/DC3/scRNA.txt", sep=" ")
-E.to_csv("/data02/zywang/MarkovHC/DC3/scATAC.txt", sep=" ")
+RNA.to_csv("./scRNA.txt", sep=" ")
+E.to_csv("./scATAC.txt", sep=" ")
 ```
 
 
