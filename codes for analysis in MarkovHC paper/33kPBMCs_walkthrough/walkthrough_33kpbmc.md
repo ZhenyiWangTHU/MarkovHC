@@ -843,5 +843,40 @@ p
 
 
 ```R
+options(repr.plot.width=30, repr.plot.height=7)
+tree <- plotHierarchicalStructure(MarkovObject=MarkovHC_pbmc33kobject,
+                                  MarkovLevels=1:56,
+                                  colorVector=NULL,
+                                  plot=FALSE,
+                                  prune=TRUE,
+                                  weed=20)
+```
+
+    [1] "Return a tree for plot."
+
+
+    Warning message in plotHierarchicalStructure(MarkovObject = MarkovHC_pbmc33kobject, :
+    “NAs introduced by coercion”
+
+
+
+```R
+options(repr.plot.width=5, repr.plot.height=5)
+ggtree::ggtree(tree,branch.length="branch.length")+ #geom_tiplab()+ 
+geom_point(size=0, alpha=.3) + #geom_nodelab()+
+    theme(legend.position="right") #+ geom_text(aes(label=branch.length, x=branch), vjust=-.5)
+```
+
+
+![png](output_52_0.png)
+
+
+
+```R
 save.image(file='./33kpbmc.RData')
+```
+
+
+```R
+
 ```
