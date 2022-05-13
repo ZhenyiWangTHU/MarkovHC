@@ -67,7 +67,7 @@ plotHierarchicalStructure = function(MarkovObject=NULL,
   edges <- edges %>%
     # Remove edges without any cell...
     #filter(TransCount > 0) %>%
-    filter(TransCount > weed) %>%
+    dplyr::filter(TransCount > weed) %>%
     # Rename the nodes
     mutate(FromNode = paste0("lv", FromRes, "_", FromClust)) %>%
     mutate(ToNode = paste0("lv", ToRes, "_", ToClust)) %>%
